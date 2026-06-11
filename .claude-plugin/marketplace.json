@@ -1,0 +1,11 @@
+{
+  "name": "bruce-plugins",
+  "owner": { "name": "Bruce Chi" },
+  "plugins": [
+    {
+      "name": "autopilot",
+      "source": "./",
+      "description": "Unattended, completion-driven autopilot for JS/TS fullstack tasks, plus an independent hands-on run grader."
+    }
+  ]
+}

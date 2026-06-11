@@ -1,0 +1,8 @@
+{
+  "name": "autopilot",
+  "description": "Unattended, completion-driven autopilot for JS/TS fullstack tasks, plus an independent hands-on run grader.",
+  "version": "1.0.0",
+  "author": { "name": "Bruce Chi" },
+  "license": "MIT",
+  "keywords": ["autopilot", "unattended", "agent", "fullstack", "typescript", "verification"]
+}

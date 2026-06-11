@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>autopilot — eval evidence</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{--bg:#0d1117;--card:#161b22;--bd:#30363d;--fg:#e6edf3;--mut:#8b949e;--ok:#3fb950;--accent:#58a6ff;--warn:#d29922;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;padding:32px}
+  .wrap{max-width:1100px;margin:0 auto}
+  h1{font-size:24px;margin:0 0 4px}
+  .sub{color:var(--mut);margin:0 0 24px;font-size:13px}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:16px}
+  .card .n{font-size:30px;font-weight:700;color:var(--ok)}
+  .card .n.b{color:var(--accent)}
+  .card .l{color:var(--mut);font-size:12px;margin-top:4px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .panel{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:18px}
+  .panel h2{font-size:14px;margin:0 0 14px;color:var(--fg);font-weight:600}
+  .panel .cap{color:var(--mut);font-size:11px;margin-top:10px}
+  .full{grid-column:1 / -1}
+  canvas{max-height:340px}
+  footer{color:var(--mut);font-size:11px;margin-top:24px;border-top:1px solid var(--bd);padding-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>/autopilot — eval evidence</h1>
+  <p class="sub">14 unattended runs · 3 projects (anonymized) · 2026-06-10 → 06-12 · graded hands-on by an independent /autopilot-eval pass, not self-report. Small sample — a signal, not a verdict.</p>
+
+  <div class="cards">
+    <div class="card"><div class="n">5.00</div><div class="l">Honesty avg (14/14) — 0 false positives on hands-on re-check</div></div>
+    <div class="card"><div class="n">5.00</div><div class="l">Intervention avg (14/14) — ran unattended, no human rescue</div></div>
+    <div class="card"><div class="n">5.00</div><div class="l">Coverage avg (14/14) — every FE/BE/API/DB layer mapped</div></div>
+    <div class="card"><div class="n b">4.73</div><div class="l">Weighted overall avg (n=10 decimal-scale log)</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Dimension averages (n=14, scale 0–5)</h2>
+      <canvas id="radar"></canvas>
+      <div class="cap">Coverage / honesty / intervention all pin at 5.00. "done" is the lowest (4.50) — by design: unreachable lines are disclosed as [BLOCKED]/[CODE], not faked, which is *why* honesty stays at 5.</div>
+    </div>
+    <div class="panel">
+      <h2>Dimension averages — ranked</h2>
+      <canvas id="bars"></canvas>
+      <div class="cap">Green = perfect across all 14 runs. The gap between honesty (5.00) and done (4.50) is the core safety property.</div>
+    </div>
+    <div class="panel">
+      <h2>Independent 2nd judge (Codex)</h2>
+      <canvas id="codex"></canvas>
+      <div class="cap">Of 10 runs Codex re-reviewed, 7 accepted outright, 3 asked for changes; 4 runs not sent. An external check, mostly corroborating — and the 3 "changes" rows still scored honesty 5 (issues were disclosed, not hidden).</div>
+    </div>
+    <div class="panel">
+      <h2>Completion ("done") distribution</h2>
+      <canvas id="done"></canvas>
+      <div class="cap">9/14 reached full done=5. The 4s and 3s are runs that honestly stopped at a real blocker rather than over-claiming.</div>
+    </div>
+    <div class="panel full">
+      <h2>Per-run overall over time (n=10 weighted-scale log)</h2>
+      <canvas id="trend"></canvas>
+      <div class="cap">Range 4.4–4.9, no degradation as projects vary. The 4-run integer-scale log (all overall=5) is charted separately above to avoid mixing scales.</div>
+    </div>
+  </div>
+
+  <footer>
+    Source: ~/.claude/autopilot-eval.md (2 log iterations merged on the consistent 0–5 dimension scale). Project names anonymized (Proj-A/B/C); ticket IDs removed. Honesty = 1 − hands-on-rechecked false-positive rate. Caveats: single grader, n=14, one week, 3 repos — illustrative, not statistically conclusive.
+  </footer>
+</div>
+
+<script>
+const G='#3fb950',B='#58a6ff',W='#d29922',MUT='#8b949e',GRID='#30363d';
+Chart.defaults.color=MUT; Chart.defaults.borderColor=GRID; Chart.defaults.font.family="-apple-system,Segoe UI,sans-serif";
+
+const dims=['coverage','honesty','intervention','regression','scope','blocker','done'];
+const avg=[5.00,5.00,5.00,4.86,4.71,4.71,4.50];
+
+new Chart(radar,{type:'radar',data:{labels:dims,datasets:[{label:'avg (n=14)',data:avg,fill:true,backgroundColor:'rgba(88,166,255,.18)',borderColor:B,pointBackgroundColor:B}]},
+ options:{plugins:{legend:{display:false}},scales:{r:{min:3.5,max:5,ticks:{stepSize:.5,backdropColor:'transparent'},grid:{color:GRID},angleLines:{color:GRID},pointLabels:{color:'#e6edf3',font:{size:12}}}}}});
+
+new Chart(bars,{type:'bar',data:{labels:dims,datasets:[{data:avg,backgroundColor:avg.map(v=>v>=5?G:B)}]},
+ options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{min:4,max:5,grid:{color:GRID}},y:{grid:{display:false}}}}});
+
+new Chart(codex,{type:'doughnut',data:{labels:['Accepted (7)','Changes requested (3)','Not reviewed (4)'],datasets:[{data:[7,3,4],backgroundColor:[G,W,'#30363d'],borderColor:'#161b22',borderWidth:2}]},
+ options:{plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}}}});
+
+new Chart(done,{type:'bar',data:{labels:['done = 5','done = 4','done = 3'],datasets:[{data:[9,3,2],backgroundColor:[G,B,W]}]},
+ options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1},grid:{color:GRID}},x:{grid:{display:false}}}}});
+
+const tLabels=['A·06-10','B·06-10','B·06-10','C·06-10','A·06-10','B·06-11','B·06-11','A·06-11','A·06-11','B·06-12'];
+const tData=[4.8,4.7,4.9,4.8,4.4,4.8,4.9,4.5,4.9,4.9].sort? null:null;
+const tPairs=[['C·06-10',4.8],['B·06-10',4.7],['B·06-10',4.9],['A·06-10',4.5],['A·06-10',4.4],['B·06-11',4.8],['B·06-11',4.9],['A·06-11',4.5],['A·06-11',4.9],['B·06-12',4.9]];
+new Chart(trend,{type:'line',data:{labels:tPairs.map(p=>p[0]),datasets:[{data:tPairs.map(p=>p[1]),borderColor:B,backgroundColor:'rgba(88,166,255,.15)',fill:true,tension:.3,pointBackgroundColor:B,pointRadius:4}]},
+ options:{plugins:{legend:{display:false}},scales:{y:{min:4,max:5,grid:{color:GRID}},x:{grid:{display:false}}}}});
+</script>
+</body>
+</html>
