@@ -29,7 +29,14 @@
 /autopilot:make-review-prompt
 ```
 
-之后用 `/plugin update autopilot@bruce-plugins` 更新。
+之后更新用下面两条命令(`/plugin install` 对已安装的插件不会拉新版本):
+
+```
+/plugin marketplace update bruce-plugins
+/plugin update autopilot@bruce-plugins
+```
+
+也可以一劳永逸:输入 `/plugin` 打开管理面板,在 **Marketplaces** 标签页对 `bruce-plugins` 开启 auto-update,之后每次启动会自动安装新版本。
 
 ### 方式 B —— 安装脚本(保留裸 `/autopilot`)
 

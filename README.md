@@ -29,7 +29,14 @@ Then invoke namespaced:
 /autopilot:make-review-prompt
 ```
 
-Update later with `/plugin update autopilot@bruce-plugins`.
+To update later (`/plugin install` won't refresh an already-installed plugin):
+
+```
+/plugin marketplace update bruce-plugins
+/plugin update autopilot@bruce-plugins
+```
+
+Or skip manual updates entirely: run `/plugin`, open the **Marketplaces** tab, and enable auto-update for `bruce-plugins` — new versions then install automatically on startup.
 
 ### Option B — install script (keeps the bare `/autopilot`)
 
