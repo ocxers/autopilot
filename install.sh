@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
 # install.sh — symlink the autopilot commands into ~/.claude/commands/
-# so you can call the bare `/autopilot` and `/autopilot-eval` (no plugin namespace).
+# so you can call the bare `/autopilot`, `/autopilot-eval` and `/make-review-prompt`
+# (no plugin namespace).
 #
 # Idempotent: safe to re-run. Pass --copy to copy instead of symlink,
 # or --uninstall to remove the links.
@@ -35,6 +36,7 @@ link_one() {
 
 link_one "$REPO_DIR/commands/autopilot.md"      "$CMD_DIR/autopilot.md"
 link_one "$REPO_DIR/commands/autopilot-eval.md" "$CMD_DIR/autopilot-eval.md"
+link_one "$REPO_DIR/commands/make-review-prompt.md"  "$CMD_DIR/make-review-prompt.md"
 
 # Seed the cross-project eval log from the template ONLY if it doesn't exist —
 # never overwrite an existing log (it holds your private run history).

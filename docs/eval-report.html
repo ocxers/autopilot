@@ -6,7 +6,7 @@
 <title>autopilot — eval evidence</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
-  :root{--bg:#0d1117;--card:#161b22;--bd:#30363d;--fg:#e6edf3;--mut:#8b949e;--ok:#3fb950;--accent:#58a6ff;--warn:#d29922;}
+  :root{--bg:#0d1117;--card:#161b22;--bd:#30363d;--fg:#e6edf3;--mut:#8b949e;--ok:#34a04a;--accent:#4c8dff;--warn:#c08a1a;}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;padding:32px}
   .wrap{max-width:1100px;margin:0 auto}
@@ -23,78 +23,104 @@
   .panel .cap{color:var(--mut);font-size:11px;margin-top:10px}
   .full{grid-column:1 / -1}
   canvas{max-height:340px}
+  .ledger{list-style:none;margin:0;padding:0;font-size:13px}
+  .ledger li{padding:7px 0;border-bottom:1px solid var(--bd);display:flex;gap:10px;align-items:baseline}
+  .ledger li:last-child{border-bottom:none}
+  .ledger .tag{flex:0 0 auto;font-size:11px;font-weight:600;padding:1px 8px;border-radius:10px}
+  .t-ok{background:rgba(52,160,74,.15);color:#4cc766}
+  .t-warn{background:rgba(192,138,26,.16);color:#d9a83f}
+  .t-bad{background:rgba(248,81,73,.14);color:#f0796f}
   footer{color:var(--mut);font-size:11px;margin-top:24px;border-top:1px solid var(--bd);padding-top:14px}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>/autopilot — eval evidence</h1>
-  <p class="sub">14 unattended runs · 3 projects (anonymized) · 2026-06-10 → 06-12 · graded hands-on by an independent /autopilot-eval pass, not self-report. Small sample — a signal, not a verdict.</p>
+  <p class="sub">129 unattended runs · 5 projects (anonymized) · 2026-06-10 → 2026-07-09 · each graded hands-on by an independent /autopilot-eval pass (re-running tests, re-driving the browser), not self-report. Self-collected by a single grader — a signal, not a verdict.</p>
 
   <div class="cards">
-    <div class="card"><div class="n">5.00</div><div class="l">Honesty avg (14/14) — 0 false positives on hands-on re-check</div></div>
-    <div class="card"><div class="n">5.00</div><div class="l">Intervention avg (14/14) — ran unattended, no human rescue</div></div>
-    <div class="card"><div class="n">5.00</div><div class="l">Coverage avg (14/14) — every FE/BE/API/DB layer mapped</div></div>
-    <div class="card"><div class="n b">4.73</div><div class="l">Weighted overall avg (n=10 decimal-scale log)</div></div>
+    <div class="card"><div class="n b">129</div><div class="l">Unattended runs logged — 5 repos, 30 days, FE/BE/API/DB tasks</div></div>
+    <div class="card"><div class="n b">4.73</div><div class="l">Weighted overall avg (0–5, n=129) — range 1.0 to 5.0, nothing hidden</div></div>
+    <div class="card"><div class="n">4.87</div><div class="l">Honesty avg — 119/129 runs had 0 false positives on hands-on re-check</div></div>
+    <div class="card"><div class="n">4.84</div><div class="l">Intervention avg — 113/129 runs finished with zero human stops</div></div>
   </div>
 
   <div class="grid">
     <div class="panel">
-      <h2>Dimension averages (n=14, scale 0–5)</h2>
+      <h2>Dimension averages (n=129, scale 0–5)</h2>
       <canvas id="radar"></canvas>
-      <div class="cap">Coverage / honesty / intervention all pin at 5.00. "done" is the lowest (4.50) — by design: unreachable lines are disclosed as [BLOCKED]/[CODE], not faked, which is *why* honesty stays at 5.</div>
+      <div class="cap">All seven dimensions ≥ 4.5. "done" is the lowest (4.50) — by design: unreachable lines are disclosed as [BLOCKED]/[CODE], not faked, which is <em>why</em> honesty stays at 4.87.</div>
     </div>
     <div class="panel">
       <h2>Dimension averages — ranked</h2>
       <canvas id="bars"></canvas>
-      <div class="cap">Green = perfect across all 14 runs. The gap between honesty (5.00) and done (4.50) is the core safety property.</div>
+      <div class="cap">No-regression (4.93) and coverage (4.89) lead. The gap between honesty (4.87) and done (4.50) is the core safety property: runs stop and disclose rather than over-claim.</div>
     </div>
     <div class="panel">
-      <h2>Independent 2nd judge (Codex)</h2>
-      <canvas id="codex"></canvas>
-      <div class="cap">Of 10 runs Codex re-reviewed, 7 accepted outright, 3 asked for changes; 4 runs not sent. An external check, mostly corroborating — and the 3 "changes" rows still scored honesty 5 (issues were disclosed, not hidden).</div>
+      <h2>Overall score distribution (n=129)</h2>
+      <canvas id="dist"></canvas>
+      <div class="cap">88/129 runs scored ≥ 4.75. The 4 runs below 4.0 include one fully reverted wrong-direction run (1.0) and one reopened correction (2.0) — logged, not deleted.</div>
     </div>
     <div class="panel">
       <h2>Completion ("done") distribution</h2>
       <canvas id="done"></canvas>
-      <div class="cap">9/14 reached full done=5. The 4s and 3s are runs that honestly stopped at a real blocker rather than over-claiming.</div>
+      <div class="cap">78/129 reached full done=5. The rest honestly stopped at real blockers (env/auth/deploy-gated) rather than over-claiming — the honesty score stays high <em>because</em> done sometimes doesn't.</div>
+    </div>
+    <div class="panel">
+      <h2>Runs per project (anonymized)</h2>
+      <canvas id="proj"></canvas>
+      <div class="cap">Two fullstack products, two enterprise KYC frontends, one WordPress embed — different stacks, same protocol. Scores hold across all five.</div>
+    </div>
+    <div class="panel">
+      <h2>Honesty ledger — every failure, on the record</h2>
+      <ul class="ledger">
+        <li><span class="tag t-ok">119 runs</span><span>0 false positives on hands-on re-check of ✅ LIVE claims.</span></li>
+        <li><span class="tag t-warn">3 runs</span><span>exactly 1 false positive each — caught by the eval, fixed and re-verified same day.</span></li>
+        <li><span class="tag t-warn">3 rows</span><span>self-corrections that retroactively dock earlier runs (a "fix" proven ineffective on real data; a misdiagnosed blocker).</span></li>
+        <li><span class="tag t-bad">1 run</span><span>executed cleanly but contradicted the ticket's mock — fully reverted, scored overall 1.0 and kept in the log.</span></li>
+        <li><span class="tag t-ok">2nd judge</span><span>6 runs re-reviewed by Codex: 5 accepted, 1 requested changes; 123 not sent.</span></li>
+      </ul>
+      <div class="cap">The log keeps its own worst rows. A benchmark that never shows a failure is marketing, not evidence.</div>
     </div>
     <div class="panel full">
-      <h2>Per-run overall over time (n=10 weighted-scale log)</h2>
+      <h2>Per-day overall average over 30 days (n=129 runs, 28 active days)</h2>
       <canvas id="trend"></canvas>
-      <div class="cap">Range 4.4–4.9, no degradation as projects vary. The 4-run integer-scale log (all overall=5) is charted separately above to avoid mixing scales.</div>
+      <div class="cap">Stable in the 4.5–5.0 band with no degradation as projects and task types vary. The 2026-07-06 dip (3.86) is the reverted wrong-direction run plus a reopened correction landing on the same day — visible because the log keeps them.</div>
     </div>
   </div>
 
   <footer>
-    Source: ~/.claude/autopilot-eval.md (2 log iterations merged on the consistent 0–5 dimension scale). Project names anonymized (Proj-A/B/C); ticket IDs removed. Honesty = 1 − hands-on-rechecked false-positive rate. Caveats: single grader, n=14, one week, 3 repos — illustrative, not statistically conclusive.
+    Source: ~/.claude/autopilot-eval.md (one row per run, all projects, single flat log). Project names anonymized (Proj-A…E); ticket IDs removed. Honesty = 1 − hands-on-rechecked false-positive rate; coverage rows logged as ratios normalized to the 0–5 scale; one run logged done=N/A (no LIVE claimed, apply auth-gated) and is excluded from the done average. Caveats: single grader, self-collected, 5 repos, one month — illustrative, not statistically conclusive.
   </footer>
 </div>
 
 <script>
-const G='#3fb950',B='#58a6ff',W='#d29922',MUT='#8b949e',GRID='#30363d';
-Chart.defaults.color=MUT; Chart.defaults.borderColor=GRID; Chart.defaults.font.family="-apple-system,Segoe UI,sans-serif";
+const G='#34a04a',B='#4c8dff',W='#c08a1a',MUT='#8b949e',GRID='#30363d';
+Chart.defaults.color=MUT; Chart.defaults.borderColor=GRID; Chart.defaults.animation=false;
+Chart.defaults.font.family="-apple-system,Segoe UI,sans-serif";
 
-const dims=['coverage','honesty','intervention','regression','scope','blocker','done'];
-const avg=[5.00,5.00,5.00,4.86,4.71,4.71,4.50];
+const dims=['coverage','regression','honesty','blocker','intervention','scope','done'];
+const avg=[4.89,4.93,4.87,4.86,4.84,4.83,4.50];
 
-new Chart(radar,{type:'radar',data:{labels:dims,datasets:[{label:'avg (n=14)',data:avg,fill:true,backgroundColor:'rgba(88,166,255,.18)',borderColor:B,pointBackgroundColor:B}]},
+new Chart(radar,{type:'radar',data:{labels:dims,datasets:[{label:'avg (n=129)',data:avg,fill:true,backgroundColor:'rgba(76,141,255,.18)',borderColor:B,pointBackgroundColor:B}]},
  options:{plugins:{legend:{display:false}},scales:{r:{min:3.5,max:5,ticks:{stepSize:.5,backdropColor:'transparent'},grid:{color:GRID},angleLines:{color:GRID},pointLabels:{color:'#e6edf3',font:{size:12}}}}}});
 
-new Chart(bars,{type:'bar',data:{labels:dims,datasets:[{data:avg,backgroundColor:avg.map(v=>v>=5?G:B)}]},
+const ranked=[['regression',4.93],['coverage',4.89],['honesty',4.87],['blocker',4.86],['intervention',4.84],['scope',4.83],['done',4.50]];
+new Chart(bars,{type:'bar',data:{labels:ranked.map(r=>r[0]),datasets:[{data:ranked.map(r=>r[1]),backgroundColor:B,borderRadius:4}]},
  options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{min:4,max:5,grid:{color:GRID}},y:{grid:{display:false}}}}});
 
-new Chart(codex,{type:'doughnut',data:{labels:['Accepted (7)','Changes requested (3)','Not reviewed (4)'],datasets:[{data:[7,3,4],backgroundColor:[G,W,'#30363d'],borderColor:'#161b22',borderWidth:2}]},
- options:{plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}}}});
+new Chart(dist,{type:'bar',data:{labels:['4.75–5.0','4.50–4.74','4.00–4.49','< 4.00'],datasets:[{data:[88,25,12,4],backgroundColor:B,borderRadius:4}]},
+ options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:GRID}},x:{grid:{display:false}}}}});
 
-new Chart(done,{type:'bar',data:{labels:['done = 5','done = 4','done = 3'],datasets:[{data:[9,3,2],backgroundColor:[G,B,W]}]},
- options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1},grid:{color:GRID}},x:{grid:{display:false}}}}});
+new Chart(done,{type:'bar',data:{labels:['done = 5','done = 4–4.5','done = 3','done ≤ 2','N/A'],datasets:[{data:[78,39,8,3,1],backgroundColor:B,borderRadius:4}]},
+ options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:GRID}},x:{grid:{display:false}}}}});
 
-const tLabels=['A·06-10','B·06-10','B·06-10','C·06-10','A·06-10','B·06-11','B·06-11','A·06-11','A·06-11','B·06-12'];
-const tData=[4.8,4.7,4.9,4.8,4.4,4.8,4.9,4.5,4.9,4.9].sort? null:null;
-const tPairs=[['C·06-10',4.8],['B·06-10',4.7],['B·06-10',4.9],['A·06-10',4.5],['A·06-10',4.4],['B·06-11',4.8],['B·06-11',4.9],['A·06-11',4.5],['A·06-11',4.9],['B·06-12',4.9]];
-new Chart(trend,{type:'line',data:{labels:tPairs.map(p=>p[0]),datasets:[{data:tPairs.map(p=>p[1]),borderColor:B,backgroundColor:'rgba(88,166,255,.15)',fill:true,tension:.3,pointBackgroundColor:B,pointRadius:4}]},
- options:{plugins:{legend:{display:false}},scales:{y:{min:4,max:5,grid:{color:GRID}},x:{grid:{display:false}}}}});
+new Chart(proj,{type:'bar',data:{labels:['Proj-A','Proj-B','Proj-C','Proj-D','Proj-E'],datasets:[{data:[59,27,24,10,9],backgroundColor:B,borderRadius:4}]},
+ options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:GRID}},y:{grid:{display:false}}}}});
+
+const days=[['06-10',4.66,5],['06-11',4.78,4],['06-12',4.90,1],['06-13',4.85,6],['06-14',4.78,5],['06-15',5.00,4],['06-16',5.00,3],['06-17',4.50,4],['06-18',4.96,7],['06-19',4.92,9],['06-20',4.87,3],['06-21',4.88,6],['06-22',4.74,5],['06-23',4.83,4],['06-24',4.63,9],['06-25',4.60,8],['06-26',4.53,9],['06-27',4.80,2],['06-28',4.60,2],['06-29',4.74,7],['07-02',4.78,4],['07-03',4.76,5],['07-04',5.00,1],['07-05',4.80,1],['07-06',3.86,7],['07-07',5.00,2],['07-08',4.90,3],['07-09',4.90,3]];
+new Chart(trend,{type:'line',data:{labels:days.map(d=>d[0]),datasets:[{data:days.map(d=>d[1]),borderColor:B,backgroundColor:'rgba(76,141,255,.15)',fill:true,tension:.3,pointBackgroundColor:B,pointRadius:3}]},
+ options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`avg ${c.parsed.y} (${days[c.dataIndex][2]} run${days[c.dataIndex][2]>1?'s':''})`}}},scales:{y:{min:3.5,max:5,grid:{color:GRID}},x:{grid:{display:false}}}}});
 </script>
 </body>
 </html>
