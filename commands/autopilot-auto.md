@@ -248,15 +248,28 @@ Skip this step on resume (see Step 1.6) — a resumed session already has its Ro
    - Identify the highest-risk areas spotted while skimming the diff (named files/functions).
    - Fill in Template B with these real values, and add 3–8 artifact-specific attack vectors naming the real riskiest functions/decisions from this diff (in addition to Template B's 9 standard attack vectors).
    - Follow Template B's rules of engagement and output format exactly (adversarial framing, `file:line` evidence requirement, no praise, BLOCKER/MAJOR/MINOR/QUESTION output grouping, explicit verdict).
-2. Append the review prompt to `channel.md`'s markdown body:
+2. Append the review prompt to `channel.md`'s markdown body using this exact structure:
 
    ```markdown
+   ---
+
+   ========================================
+   CLAUDE CODE — Review Request — <timestamp>
+   ========================================
+
    ## Round 1
 
-   ### Review Request (claude-code, <timestamp>)
-
    <review prompt content>
+
+   ========================================
+   /CLAUDE CODE
+   ========================================
    ```
+
+   Format rules for the channel file (all writers must follow):
+   - Every section of content is wrapped in opening/closing blocks. The opening block: `========================================` / `AUTHOR — Section Title — <timestamp>` / `========================================`. The closing block: `========================================` / `/AUTHOR` / `========================================`.
+   - `---` (horizontal rule) before every `## Round N` heading to separate rounds.
+   - After the last section of each round (the Review Feedback closing block), append: `**— End of Round N —**`.
 
 3. Update the frontmatter: `status: REVIEW_REQUESTED`, `round: 1`, `updated_by: claude-code`, `updated_at: <timestamp>`.
 
@@ -266,7 +279,7 @@ If `git diff` shows no code changes at all (task required no code changes), skip
 
 Poll every **30 seconds**. On each poll iteration:
 
-1. Read `channel.md` and parse the YAML frontmatter: `status`, `round`, `started_at`, `max_rounds`, `timeout_hours`. **If the channel file cannot be read, or its YAML frontmatter fails to parse** (missing/malformed delimiters, invalid YAML, missing required fields) — do not guess or repair it silently: log the error (append a note under a `### Error (claude-code, <timestamp>)` heading to whatever body content is salvageable, or create a minimal new file with just an error note and a best-effort frontmatter block if the file is unreadable/empty), set `status: ABORTED`, `updated_by: claude-code`, `updated_at: <timestamp>`, and go to Step 6 immediately — skip the rest of this polling iteration.
+1. Read `channel.md` and parse the YAML frontmatter: `status`, `round`, `started_at`, `max_rounds`, `timeout_hours`. **If the channel file cannot be read, or its YAML frontmatter fails to parse** (missing/malformed delimiters, invalid YAML, missing required fields) — do not guess or repair it silently: log the error (append an error note wrapped in a `CLAUDE CODE — Error — <timestamp>` block to whatever body content is salvageable, or create a minimal new file with just an error note and a best-effort frontmatter block if the file is unreadable/empty), set `status: ABORTED`, `updated_by: claude-code`, `updated_at: <timestamp>`, and go to Step 6 immediately — skip the rest of this polling iteration.
 2. **Safety checks — run these FIRST, every poll, before anything else:**
    - If `round > max_rounds` → update frontmatter to `status: MAX_ROUNDS`, `updated_by: claude-code`, `updated_at: <timestamp>`. Go to Step 6.
    - If current time minus `started_at` exceeds `timeout_hours` hours → update frontmatter to `status: TIMEOUT`, `updated_by: claude-code`, `updated_at: <timestamp>`. Go to Step 6.
@@ -280,22 +293,29 @@ Poll every **30 seconds**. On each poll iteration:
      - Go to Step 6.
    - **If there ARE BLOCKER or MAJOR findings:**
      - Fix each BLOCKER and MAJOR finding. Apply the same implementation discipline as the coding phase (§2.5–2.9): small batches, run tests/typecheck, browser verification if UI changes, adversarial self-review of the fix itself.
-     - After all fixes, append a fix summary to `channel.md`:
+     - After all fixes, close the previous round and open a new one. Append to `channel.md`:
 
        ```markdown
-       ### Fix Summary (claude-code, <timestamp>)
+       **— End of Round <current> —**
 
-       **Findings addressed:**
-       - [BLOCKER] <title>: <what was done>
-       - [MAJOR] <title>: <what was done>
+       ---
 
-       **MINOR/QUESTION acknowledged:**
-       - [MINOR] <title>: <response>
+       ## Round <current + 1>
 
-       **Verification:** <tests run, results>
+       ========================================
+       CLAUDE CODE — Fix Summary — <timestamp>
+       ========================================
+
+       Fixed. Please re-review via `git diff <base>..HEAD`.
+
+       ========================================
+       /CLAUDE CODE
+       ========================================
        ```
 
-     - Increment `round`. Append a new round heading `## Round <new-round-number>` to the channel file body, then append the fix summary section under it (the `### Fix Summary` block above goes inside this round).
+       Keep it short — the actual changes are in the diff, not here. Only add detail for findings you **disagree with or chose not to fix**, with a brief reason (e.g. "BLOCKER audio assets: genuine external dependency, cannot resolve in code" or "MINOR naming: disagree — current name matches the domain model"). Codex can then accept the reasoning or push back.
+
+     - Increment `round` in the frontmatter to `<current + 1>`.
      - Update frontmatter: `status: FIX_COMPLETED`, `round: <new value>`, `updated_by: claude-code`, `updated_at: <timestamp>`.
      - Continue polling (do not go to Step 6 — wait for Codex's re-review).
 4. **If `status` is anything else** (`REVIEW_REQUESTED`, `FIX_COMPLETED` — it is Codex's turn, Claude Code is waiting):
@@ -318,6 +338,51 @@ Your communication channel is a shared file in the project repository.
 - You communicate through: <project-path>/.autopilot/reviews/<session-id>/channel.md
 - You share this channel with Claude Code, which is the CODER on the other end.
 
+## Channel file format
+
+Each participant's content is wrapped in labeled blocks:
+
+    ========================================
+    AUTHOR — Section Title — <ISO 8601 timestamp>
+    ========================================
+
+    (content)
+
+    ========================================
+    /AUTHOR
+    ========================================
+
+AUTHOR is either `CLAUDE CODE` or `CODEX`. Rounds are separated by `---`
+and `## Round N`. Each round ends with `**— End of Round N —**`.
+
+Example — what a complete Round 1 looks like:
+
+    ---
+
+    ## Round 1
+
+    ========================================
+    CLAUDE CODE — Review Request — 2026-08-01T07:30:00Z
+    ========================================
+
+    (review prompt)
+
+    ========================================
+    /CLAUDE CODE
+    ========================================
+
+    ========================================
+    CODEX — Review Feedback — 2026-08-01T08:33:52Z
+    ========================================
+
+    (findings + verdict)
+
+    ========================================
+    /CODEX
+    ========================================
+
+    **— End of Round 1 —**
+
 ## Protocol
 
 1. Read the channel file at <project-path>/.autopilot/reviews/<session-id>/channel.md
@@ -325,7 +390,8 @@ Your communication channel is a shared file in the project repository.
 3. Act based on the status:
 
    - If status is `REVIEW_REQUESTED` or `FIX_COMPLETED`:
-     a. Read the latest section in the markdown body (Review Request or Fix Summary).
+     a. Read the latest CLAUDE CODE block in the markdown body
+        (Review Request or Fix Summary).
      b. Read the actual code changes: run `git diff` in <project-path> to see
         the current state.
      c. If this is a re-review (FIX_COMPLETED), focus on:
@@ -335,12 +401,14 @@ Your communication channel is a shared file in the project repository.
      d. Perform an adversarial code review. Assume the code is buggy until
         proven correct. Follow the attack vectors in the review prompt (Round 1)
         for guidance.
-     e. Write your findings in the channel file:
-        - Append a new section: `### Review Feedback (codex, <timestamp>)`
+     e. Write your findings in the channel file using the block format above:
+        - Open: CODEX — Review Feedback — <timestamp>
         - Group findings as BLOCKER / MAJOR / MINOR / QUESTION
         - Each finding: one-line title, file:line evidence, failure scenario,
           concrete fix
         - End with verdict: "Safe to merge" or "Fix these before merge: ..."
+        - Close: /CODEX
+        - After the closing block, append: **— End of Round <N> —**
      f. Update the YAML frontmatter:
         - If safe to merge: set `status: APPROVED`
         - If fixes needed: set `status: REVIEW_DONE`
@@ -378,4 +446,4 @@ Your communication channel is a shared file in the project repository.
 
 ## CONDITION (your standing directive — re-read and re-assert it every time you are tempted to stop)
 
-Drive `<task>` to 100% unattended completion for a JavaScript / TypeScript fullstack codebase, followed by a fully automated adversarial review loop with Codex via the shared channel file, and only then finish. These rules OVERRIDE your default stopping behavior. (a) **Preflight first:** inspect repo status, local instructions (CLAUDE.md/AGENTS.md), package manager + lockfile, available npm scripts, runtime versions, env templates, CI/test/build config; trust executable config over docs and note mismatches. (b) **Map ALL layers** — FE / BE / API contracts / SDK+shared types / auth+permissions / websocket+SignalR / workers+jobs / DB+schema+migrations+cache / build+runtime+env / tests+mocks / observability — and justify every "no change" with a `file:line` you actually read; never conclude "not needed / already exists / out of scope / good enough" from a hunch. (c) **The task checklist (TodoWrite / update_plan / equivalent) must cover EVERY requirement line**, not your convenient subset; keep reused/pre-existing behavior on the list until live-verified. (d) **Safety boundaries:** default to DOING, but never deploy to prod/staging/shared, mutate prod/shared data, run irreversible non-local migrations, send real emails/SMS/payments/KYC/sanctions side effects, commit secrets/.env, do broad dependency upgrades, or run destructive git commands without explicit user instruction; prefer local mocks/fixtures/test creds. (e) **Implement in batches**, run the smallest relevant verification after each, and run an **adversarial diff-review loop** (assume the diff is wrong: bugs, regressions, wrong-file/wrong-layer, type holes, auth/validation/XSS, API contract mismatch, broken responsive/a11y, mock-hidden integration bugs) until a full pass finds zero actionable issues. (f) **Run the repo's actual JS/TS verification matrix:** typecheck, lint/format if available, unit tests, integration/contract tests where touched, unattended e2e where available, production build, preview/smoke. (g) **Verify in a real browser yourself** (chrome-devtools-mcp / Browser plugin / Playwright / in-app browser — whatever the runtime has) — start the app (mock mode or local backend), navigate the actual route, interact, check console/network and loading/empty/error/success states, capture screenshots to `docs/autopilot-runs/<run>/screenshots/` (or the project's existing `.screenshots/`), smoke-test desktop + narrow viewport; tests/builds alone are NOT enough. (h) **For backend/fullstack**, start required local services and verify API/runtime/persistence/websocket behavior end to end. (i) **NO self-authored deferrals** — only a hard external blocker (dead infra / missing credentials / no API access / unsafe-without-decision) may leave an item undone, recorded as ⛔ with the exact blocker; never relabel a blocker as "done / not needed". (j) **Maintain** `docs/autopilot-runs/<timestamp>-<task>/summary.md` with checklist, surface map, commands, browser evidence, blockers, and final accounting, excluding secrets/sensitive payloads. (k) **Git:** never add/commit/push/PR unless explicitly asked; never revert unrelated dirty files. (l) **Coding phase finishes with per-line `[LIVE]` / `[CODE]` / `[BLOCKED]` accounting**; "exists / implemented" ≠ done, every item (including reused ones) must be LIVE end-to-end verified with evidence. The coding phase is complete only when every line is ✅ `[LIVE]` or ⛔ `[BLOCKED]`-with-a-real-blocker; `[CODE]`-only is not completion unless live verification is impossible for a documented external reason. If you start thinking "just FE / backend's fine / good enough / follow-up later / a decision lets me skip", that IS the scope-narrowing failure — re-open the full surface and prove-with-`file:line` or do it. (m) **After coding is complete, enter the review loop.** Generate a code review prompt (Template B logic from `/make-review-prompt`, adopted inline — never invoked as a slash command), write it to the channel file at `.autopilot/reviews/<session-id>/channel.md`, and poll for Codex feedback every 30 seconds. When Codex writes feedback: parse findings, fix all BLOCKER/MAJOR issues, run verification, write a fix summary to the channel file, and wait for Codex's re-review. Loop until Codex approves (`APPROVED`), max rounds is reached (default 10), timeout expires (default 5 hours), or the user aborts. Never skip the review loop — coding without review is NOT complete for this command. (n) **Channel file is the single source of truth for review state.** Read and write the YAML frontmatter `status` field to coordinate turns. Only write when it is your turn (status `REVIEW_DONE` means it is your turn to fix; status `REVIEW_REQUESTED` or `FIX_COMPLETED` means it is Codex's turn — do not write in that case), with one exception: the safety-check transitions to `MAX_ROUNDS`/`TIMEOUT`, which are exclusively yours at any time. Stall warnings go to the chat session, never to the channel file. Never skip a round, never overwrite Codex's feedback without reading and acting on it first. (o) **Fix discipline during the review loop.** Apply the same rigor as the coding phase: run tests, typecheck, browser verification if UI. An adversarial reviewer will catch sloppy fixes — do it right the first time, not the fast way. (p) **As the final action, run `/autopilot-eval`** to independently grade the complete run — coding AND the review loop (fresh judge subagent, hands-on re-verification of ✅ claims) — and append one row to `~/.claude/autopilot-eval.md`; if it finds ✅ items that don't reproduce, those are NOT done — fix them, don't bury them; never self-grade from your own `summary.md`.
+Drive `<task>` to 100% unattended completion for a JavaScript / TypeScript fullstack codebase, followed by a fully automated adversarial review loop with Codex via the shared channel file, and only then finish. These rules OVERRIDE your default stopping behavior. (a) **Preflight first:** inspect repo status, local instructions (CLAUDE.md/AGENTS.md), package manager + lockfile, available npm scripts, runtime versions, env templates, CI/test/build config; trust executable config over docs and note mismatches. (b) **Map ALL layers** — FE / BE / API contracts / SDK+shared types / auth+permissions / websocket+SignalR / workers+jobs / DB+schema+migrations+cache / build+runtime+env / tests+mocks / observability — and justify every "no change" with a `file:line` you actually read; never conclude "not needed / already exists / out of scope / good enough" from a hunch. (c) **The task checklist (TodoWrite / update_plan / equivalent) must cover EVERY requirement line**, not your convenient subset; keep reused/pre-existing behavior on the list until live-verified. (d) **Safety boundaries:** default to DOING, but never deploy to prod/staging/shared, mutate prod/shared data, run irreversible non-local migrations, send real emails/SMS/payments/KYC/sanctions side effects, commit secrets/.env, do broad dependency upgrades, or run destructive git commands without explicit user instruction; prefer local mocks/fixtures/test creds. (e) **Implement in batches**, run the smallest relevant verification after each, and run an **adversarial diff-review loop** (assume the diff is wrong: bugs, regressions, wrong-file/wrong-layer, type holes, auth/validation/XSS, API contract mismatch, broken responsive/a11y, mock-hidden integration bugs) until a full pass finds zero actionable issues. (f) **Run the repo's actual JS/TS verification matrix:** typecheck, lint/format if available, unit tests, integration/contract tests where touched, unattended e2e where available, production build, preview/smoke. (g) **Verify in a real browser yourself** (chrome-devtools-mcp / Browser plugin / Playwright / in-app browser — whatever the runtime has) — start the app (mock mode or local backend), navigate the actual route, interact, check console/network and loading/empty/error/success states, capture screenshots to `docs/autopilot-runs/<run>/screenshots/` (or the project's existing `.screenshots/`), smoke-test desktop + narrow viewport; tests/builds alone are NOT enough. (h) **For backend/fullstack**, start required local services and verify API/runtime/persistence/websocket behavior end to end. (i) **NO self-authored deferrals** — only a hard external blocker (dead infra / missing credentials / no API access / unsafe-without-decision) may leave an item undone, recorded as ⛔ with the exact blocker; never relabel a blocker as "done / not needed". (j) **Maintain** `docs/autopilot-runs/<timestamp>-<task>/summary.md` with checklist, surface map, commands, browser evidence, blockers, and final accounting, excluding secrets/sensitive payloads. (k) **Git:** never add/commit/push/PR unless explicitly asked; never revert unrelated dirty files. (l) **Coding phase finishes with per-line `[LIVE]` / `[CODE]` / `[BLOCKED]` accounting**; "exists / implemented" ≠ done, every item (including reused ones) must be LIVE end-to-end verified with evidence. The coding phase is complete only when every line is ✅ `[LIVE]` or ⛔ `[BLOCKED]`-with-a-real-blocker; `[CODE]`-only is not completion unless live verification is impossible for a documented external reason. If you start thinking "just FE / backend's fine / good enough / follow-up later / a decision lets me skip", that IS the scope-narrowing failure — re-open the full surface and prove-with-`file:line` or do it. (m) **After coding is complete, enter the review loop.** Generate a code review prompt (Template B logic from `/make-review-prompt`, adopted inline — never invoked as a slash command), write it to the channel file at `.autopilot/reviews/<session-id>/channel.md`, and poll for Codex feedback every 30 seconds. When Codex writes feedback: parse findings, fix all BLOCKER/MAJOR issues, run verification, write a short fix acknowledgment to the channel file (one line — the diff has the details), and wait for Codex's re-review. Loop until Codex approves (`APPROVED`), max rounds is reached (default 10), timeout expires (default 5 hours), or the user aborts. Never skip the review loop — coding without review is NOT complete for this command. (n) **Channel file is the single source of truth for review state.** Read and write the YAML frontmatter `status` field to coordinate turns. Only write when it is your turn (status `REVIEW_DONE` means it is your turn to fix; status `REVIEW_REQUESTED` or `FIX_COMPLETED` means it is Codex's turn — do not write in that case), with one exception: the safety-check transitions to `MAX_ROUNDS`/`TIMEOUT`, which are exclusively yours at any time. Stall warnings go to the chat session, never to the channel file. Never skip a round, never overwrite Codex's feedback without reading and acting on it first. **Channel file format:** each participant's content is wrapped in opening (`========================================` / `AUTHOR — Section Title — <timestamp>` / `========================================`) and closing (`========================================` / `/AUTHOR` / `========================================`) blocks; `---` before every `## Round N` heading; after the last section of each round append `**— End of Round N —**`. (o) **Fix discipline during the review loop.** Apply the same rigor as the coding phase: run tests, typecheck, browser verification if UI. An adversarial reviewer will catch sloppy fixes — do it right the first time, not the fast way. (p) **As the final action, run `/autopilot-eval`** to independently grade the complete run — coding AND the review loop (fresh judge subagent, hands-on re-verification of ✅ claims) — and append one row to `~/.claude/autopilot-eval.md`; if it finds ✅ items that don't reproduce, those are NOT done — fix them, don't bury them; never self-grade from your own `summary.md`.
