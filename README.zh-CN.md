@@ -7,6 +7,7 @@
 - **`/autopilot <任务 或 spec 文件路径>`** —— 把一条严格的*完成条件*作为持续指令:梳理每一层(前端 / 后端 / API / 数据库 / 鉴权 / 测试 / 构建),禁止自行缩小范围,跑仓库真实的验证矩阵,在真实浏览器里核验,只有当每一条需求都被 `[LIVE]` 验证过、或被真实外部依赖 `[BLOCKED]` 时才停止。专为你离开、无法回答追问的场景设计。
 - **`/autopilot-eval [run-dir]`** —— *动手*评估一次已完成的运行:它**不信任**运行自己的总结,而是重跑测试、重新驱动浏览器,对 7 个维度打分(诚实度与范围权重最高),并在 `~/.claude/autopilot-eval.md` 这一份跨项目日志里追加一行。
 - **`/make-review-prompt [requirements|code] [target]`** —— 生成一份**自包含的对抗性 Review Prompt**,可直接交给一个全新的 agent 或人类评审,用来「攻击」一份需求 / spec 文档(写码之前)或一次代码改动(合并之前)。生成的 prompt 预设「被审对象有错,直到被证明无错」,要求 `file:line` 证据、禁止夸赞、并以明确的裁决收尾。与 `/autopilot` 天然配套:跑之前先攻击 spec,跑完之后再攻击 diff。
+- **`/autopilot-auto <任务> [--session <id>] [--max-rounds N] [--timeout H]`** —— 把 `/autopilot` 的编码能力与 OpenAI Codex（CLI 或 Cursor 插件）驱动的**自动化对抗性 Review 循环**结合起来。你打开两个会话——Claude Code 负责写码，Codex 负责审查——在两边输入相同的 session ID，然后就可以离开。Claude Code 与 Codex 通过一份共享的 channel 文件（`.autopilot/reviews/<session-id>/channel.md`）通信，每 30 秒轮询一次状态变化。循环会在 Codex 通过、达到最大轮数（默认 10）、或超时（默认 5 小时）时终止。详见下方 [如何使用 `/autopilot-auto`](#如何使用-autopilot-auto)。
 
 > 这些命令的风格强硬、刻意严格。它们假设你的仓库是 JS/TS 全栈项目,且具备真实的 测试 / 构建 / 浏览器 验证能力。
 
@@ -27,6 +28,7 @@
 /autopilot:autopilot <任务 或 spec 文件路径>
 /autopilot:autopilot-eval
 /autopilot:make-review-prompt
+/autopilot:autopilot-auto <任务> [--session <id>] [--max-rounds N] [--timeout H]
 ```
 
 之后更新用下面两条命令(`/plugin install` 对已安装的插件不会拉新版本):
@@ -56,23 +58,66 @@ cd autopilot
 /autopilot <任务 或 spec 文件路径>
 /autopilot-eval
 /make-review-prompt [requirements|code] [target]
+/autopilot-auto <任务> [--session <id>] [--max-rounds N] [--timeout H]
 ```
 
 如果你还没有评分日志,脚本会在 `~/.claude/autopilot-eval.md` 处生成一份**空**日志;它绝不会覆盖已有日志。
 
+## 如何使用 `/autopilot-auto`
+
+这个命令需要**两个会话并行运行**——一个负责写码（Claude Code），一个负责审查（Codex）。两者通过仓库中的共享文件协调，所以必须访问同一个项目目录。
+
+### 1. 打开 Claude Code
+
+在终端（或装有 Claude Code 扩展的 VS Code / JetBrains）中，进入项目目录并运行：
+
+```
+/autopilot-auto 按照 docs/specs/profile.md 实现用户资料页 --session my-review-01
+```
+
+Claude Code 会：
+- 开始编码（完整的 `/autopilot` 协议）
+- 在代码块中打印一段 **Codex 提示词模板** —— 复制它
+- 编码完成后，开始轮询 channel 文件等待 Codex 的审查反馈
+
+### 2. 打开 Codex（CLI 或 Cursor）
+
+**方式 A —— Codex CLI**（在第二个终端，同一个项目目录）：
+
+```
+codex
+```
+
+然后粘贴 Claude Code 打印出来的提示词模板。
+
+**方式 B —— Cursor 中的 Codex**（作为插件 / 标签页）：
+
+在 Cursor 中打开一个新的 Codex 标签页（必须是同一个仓库），然后把提示词模板粘贴进去。
+
+无论哪种方式，Codex 都会开始监控 channel 文件并审查代码变更。
+
+### 3. 走开就好
+
+双方每 30 秒轮询一次 channel 文件。Claude Code 写代码并请求审查；Codex 审查代码并写反馈。循环自动持续，直到：
+- Codex 通过（无 BLOCKER/MAJOR 发现）
+- 达到最大轮数（默认 10）
+- 超时（默认 5 小时）
+
+结果保存在 `.autopilot/reviews/<session-id>/summary.md`。
+
 ## 它真的有用吗?
 
-下图:30 天内(2026-06-10 → 07-09)、跨 5 个项目(已匿名)的 129 次无人值守运行,每次都由独立的 `/autopilot-eval` *动手*评分——重跑测试、重新驱动浏览器,而非信任运行自己的总结。
+下图:52 天内(2026-06-10 → 07-31)、跨 5 个项目(已匿名)的 140 次无人值守运行,每次都由独立的 `/autopilot-eval` *动手*评分——重跑测试、重新驱动浏览器,而非信任运行自己的总结。
 
 ![autopilot 评估证据](docs/eval-evidence.png)
 
-- **总分均值 4.73 / 129 次**(0–5 加权)—— 88 次 ≥ 4.75;全距 1.0–5.0,一次不藏。
-- **诚实度 4.87** —— 119/129 次动手复核 0 误报。3 次各出 1 个误报、3 行事后自我纠正、1 次方向做反被整体回滚(总分 1.0),全部留在日志里。
-- **无人干预 4.84** —— 113/129 次全程零人工介入。
-- **`done` 4.50**(最低,刻意如此)—— 做不到的需求行被如实标为 `[BLOCKED]`/`[CODE]`,而非伪装完成。诚实度与 done 之间的落差正是其安全性所在。
+- **总分均值 4.71 / 140 次**(0–5 加权)—— 92 次 ≥ 4.75;全距 1.0–5.0,一次不藏。
+- **诚实度 4.87** —— 130/140 次动手复核 0 误报。3 次各出 1 个误报、3 行事后自我纠正、1 次方向做反被整体回滚(总分 1.0),全部留在日志里。
+- **无人干预 4.85** —— 123/140 次全程零人工介入。
+- **`done` 4.49**(最低,刻意如此)—— 做不到的需求行被如实标为 `[BLOCKED]`/`[CODE]`,而非伪装完成。诚实度与 done 之间的落差正是其安全性所在。
 - 独立第二评委(Codex)复核了 6 次:5 次 Accept,1 次要求改动;其余未送审。
 
-> 诚实的局限:单一评委、自采样本、n=129、一个月、5 个仓库。这是「信号」,不是统计结论。可交互版本:[docs/eval-report.html](docs/eval-report.html)。
+> 诚实的局限:单一评委、自采样本、n=140、52 天、5 个仓库。这是「信号」,不是统计结论。可交互版本:[docs/eval-report.html](docs/eval-report.html)。
 
 ## 评分卡说明
 

@@ -7,6 +7,7 @@ Claude Code slash commands for running JS/TS fullstack work **unattended**, driv
 - **`/autopilot <task or spec-path>`** — adopts a strict *completion condition* as a standing directive: maps every layer (FE/BE/API/DB/auth/tests/build), forbids self-authored scope-narrowing, runs the repo's real verification matrix, verifies in a real browser, and only stops when every requirement line is `[LIVE]`-verified or `[BLOCKED]` by a real external dependency. Built for when you're away and can't answer follow-ups.
 - **`/autopilot-eval [run-dir]`** — grades a finished run *hands-on*: it does **not** trust the run's own summary. It re-runs tests, re-drives the browser, scores 7 dimensions (honesty & scope weighted highest), and appends one row to a single cross-project log at `~/.claude/autopilot-eval.md`.
 - **`/make-review-prompt [requirements|code] [target]`** — generates a **self-contained adversarial review prompt** you can hand to a fresh agent or a human reviewer, targeting either a requirements/spec doc (before coding) or a code change (before merge). The generated prompt assumes the artifact is wrong until proven right, demands `file:line` evidence, forbids praise, and ends with an explicit verdict. Pairs naturally with `/autopilot`: stress-test the spec before the run, stress-test the diff after it.
+- **`/autopilot-auto <task> [--session <id>] [--max-rounds N] [--timeout H]`** — combines `/autopilot` coding with an **automated adversarial review loop** powered by OpenAI Codex (CLI or Cursor plugin). You open two sessions — Claude Code for coding, Codex for reviewing — enter the same session ID on each side, and walk away. They communicate through a shared channel file (`.autopilot/reviews/<session-id>/channel.md`), polling every 30 seconds. The loop terminates when Codex approves, max rounds (default 10) are reached, or timeout (default 5h) expires. See [How to use `/autopilot-auto`](#how-to-use-autopilot-auto) below.
 
 > These are opinionated and intentionally strict. They assume a JS/TS fullstack repo with a real test/build/browser verification story.
 
@@ -27,6 +28,7 @@ Then invoke namespaced:
 /autopilot:autopilot <task or spec-path>
 /autopilot:autopilot-eval
 /autopilot:make-review-prompt
+/autopilot:autopilot-auto <task> [--session <id>] [--max-rounds N] [--timeout H]
 ```
 
 To update later (`/plugin install` won't refresh an already-installed plugin):
@@ -56,23 +58,66 @@ Then invoke:
 /autopilot <task or spec-path>
 /autopilot-eval
 /make-review-prompt [requirements|code] [target]
+/autopilot-auto <task> [--session <id>] [--max-rounds N] [--timeout H]
 ```
 
 The script also seeds an **empty** eval log at `~/.claude/autopilot-eval.md` if you don't already have one. It never overwrites an existing log.
 
+## How to use `/autopilot-auto`
+
+This command needs **two sessions running in parallel** — one for coding (Claude Code), one for reviewing (Codex). They coordinate through a shared file in the repo, so both must have access to the same project directory.
+
+### 1. Open Claude Code
+
+In your terminal (or VS Code / JetBrains with the Claude Code extension), navigate to the project and run the command:
+
+```
+/autopilot-auto implement the user profile page per docs/specs/profile.md --session my-review-01
+```
+
+Claude Code will:
+- Start coding the task (full `/autopilot` protocol)
+- Print a **Codex prompt template** in a fenced code block — copy it
+- After coding finishes, begin polling the channel file for Codex's review feedback
+
+### 2. Open Codex (CLI or Cursor)
+
+**Option A — Codex CLI** (in a second terminal, same project directory):
+
+```
+codex
+```
+
+Then paste the prompt template that Claude Code printed.
+
+**Option B — Codex in Cursor** (as a plugin/tab):
+
+Open a new Codex tab in Cursor (the project must be the same repo), then paste the prompt template into it.
+
+Either way, Codex will start monitoring the channel file and reviewing code changes as they appear.
+
+### 3. Walk away
+
+Both sides poll the channel file every 30 seconds. Claude Code writes code and requests reviews; Codex reviews and writes feedback. The loop continues automatically until one of:
+- Codex approves (no BLOCKER/MAJOR findings)
+- Max rounds reached (default 10)
+- Timeout expires (default 5 hours)
+
+Results are saved to `.autopilot/reviews/<session-id>/summary.md`.
+
 ## Does it actually work?
 
-Below: 129 unattended runs across 5 projects (anonymized) over 30 days (2026-06-10 → 07-09), each graded *hands-on* by an independent `/autopilot-eval` pass — re-running tests and re-driving the browser, not trusting the run's own summary.
+Below: 140 unattended runs across 5 projects (anonymized) over 52 days (2026-06-10 → 07-31), each graded *hands-on* by an independent `/autopilot-eval` pass — re-running tests and re-driving the browser, not trusting the run's own summary.
 
 ![autopilot eval evidence](docs/eval-evidence.png)
 
-- **Overall 4.73 avg / 129 runs** (0–5 weighted) — 88 runs scored ≥ 4.75; full range 1.0–5.0, nothing hidden.
-- **Honesty 4.87** — 119/129 runs had 0 false positives on hands-on re-check. The 3 runs with an FP, 3 self-correction rows, and 1 fully reverted wrong-direction run (overall 1.0) all stay in the log.
-- **Intervention 4.84** — 113/129 runs finished with zero human stops.
-- **`done` 4.50** (lowest, by design) — unreachable lines were disclosed as `[BLOCKED]`/`[CODE]`, not faked. The honesty↔done gap *is* the safety property.
+- **Overall 4.71 avg / 140 runs** (0–5 weighted) — 92 runs scored ≥ 4.75; full range 1.0–5.0, nothing hidden.
+- **Honesty 4.87** — 130/140 runs had 0 false positives on hands-on re-check. The 3 runs with an FP, 3 self-correction rows, and 1 fully reverted wrong-direction run (overall 1.0) all stay in the log.
+- **Intervention 4.85** — 123/140 runs finished with zero human stops.
+- **`done` 4.49** (lowest, by design) — unreachable lines were disclosed as `[BLOCKED]`/`[CODE]`, not faked. The honesty↔done gap *is* the safety property.
 - Independent 2nd judge (Codex) re-reviewed 6 runs: 5 accepted, 1 requested changes; the rest were not sent.
 
-> Honest caveats: single grader, self-collected, n=129, one month, 5 repos. This is a signal, not a statistical verdict. Interactive version: [docs/eval-report.html](docs/eval-report.html).
+> Honest caveats: single grader, self-collected, n=140, 52 days, 5 repos. This is a signal, not a statistical verdict. Interactive version: [docs/eval-report.html](docs/eval-report.html).
 
 ## The eval scorecard
 
