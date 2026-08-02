@@ -61,7 +61,9 @@ Column meaning: `cov` = requirement coverage · `done` = ✅LIVE ÷ total · **`
 
 ## Step 6 — Report back
 
-Summarize to the user: overall verdict, **the false positives (if any) — lead with these**, missing requirements, and the scorecard path. Be honest about single-run variance: phrase as "on this run / these N items", never extrapolate to "reliability X%".
+**If called from `/autopilot-auto`:** SKIP this step entirely. `/autopilot-auto` runs the eval silently — no scores, tables, findings, or summaries should appear in the chat session. The eval log file (`~/.claude/autopilot-eval.md`) IS the output. Return control to `/autopilot-auto` without printing anything.
+
+**If called standalone (directly by the user):** Summarize to the user: overall verdict, **the false positives (if any) — lead with these**, missing requirements, and the scorecard path. Be honest about single-run variance: phrase as "on this run / these N items", never extrapolate to "reliability X%".
 
 ---
 
