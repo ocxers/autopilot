@@ -1,7 +1,7 @@
 {
   "name": "autopilot",
   "description": "Unattended, completion-driven autopilot for JS/TS fullstack tasks, an automated coding + adversarial review loop, an independent hands-on run grader, and an adversarial review-prompt generator.",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "author": {
     "name": "Bruce Chi"
   },
