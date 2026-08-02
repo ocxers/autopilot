@@ -99,9 +99,11 @@ Discover the repo's **actual** commands and run the applicable matrix:
 
 If a command is missing, broken before your change, or documented but not executable, record the evidence and use the closest valid alternative. **`tsc` / build / lint / unit tests are necessary but NOT sufficient.**
 
-### 7. Real Browser Verification — you do it yourself
+### 7. Real Browser Verification — MANDATORY for web apps
 
-For any UI, routing, styling, auth, API wiring, or user-flow change, verify in a **real browser** using whatever browser-driving capability your runtime has (chrome-devtools-mcp, a Browser plugin, Playwright, the project's in-app browser, or equivalent) and verify the actual rendered behavior with your own eyes:
+**If the project is a web application** (has a frontend that runs in a browser — React, Vue, Angular, Next.js, or any HTML/JS UI), browser verification is **mandatory, not optional.** This is the single most important verification step for web apps — builds and tests pass on broken UIs all the time.
+
+For **any** change in a web app — frontend OR backend (UI, routing, styling, auth, API endpoints, data fetching, permissions, validation, websocket, or any code that affects what the user sees or can do in the browser) — verify in a **real browser** using whatever browser-driving capability your runtime has (chrome-devtools-mcp, a Browser plugin, Playwright, the project's in-app browser, or equivalent) and verify the actual rendered behavior with your own eyes:
 
 - Start the correct local dev server or preview server. Use mock mode or local backend when live credentials are unavailable; if a flow needs the backend running, start it / confirm it.
 - Navigate to the actual route.
@@ -112,6 +114,8 @@ For any UI, routing, styling, auth, API wiring, or user-flow change, verify in a
 - Smoke-test at least one desktop viewport and one mobile/narrow viewport for visual changes.
 
 Don't ask the user to check; don't accept "should work".
+
+**Tripwire:** if you are about to mark any web-app requirement (FE or BE) as `[LIVE]` without having verified the affected flow in a browser, STOP — that is `[CODE]`, not `[LIVE]`. A backend API change is not `[LIVE]` until you've seen the frontend consume it correctly in the browser. If you skip browser verification for a web app, you MUST state the specific reason in the evidence log (e.g. "dev server requires Redis + ES which are not running locally") — "not needed" or "build passed" is not a valid reason. Even without a full backend, you can still verify: page renders without crash, no console errors, correct components appear, routing works.
 
 ### 8. Fullstack Runtime Verification
 
