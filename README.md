@@ -7,7 +7,7 @@ Claude Code slash commands for running JS/TS fullstack work **unattended**, driv
 - **`/autopilot <task or spec-path>`** — adopts a strict *completion condition* as a standing directive: maps every layer (FE/BE/API/DB/auth/tests/build), forbids self-authored scope-narrowing, runs the repo's real verification matrix, verifies in a real browser, and only stops when every requirement line is `[LIVE]`-verified or `[BLOCKED]` by a real external dependency. Built for when you're away and can't answer follow-ups.
 - **`/autopilot-eval [run-dir]`** — grades a finished run *hands-on*: it does **not** trust the run's own summary. It re-runs tests, re-drives the browser, scores 7 dimensions (honesty & scope weighted highest), and appends one row to a single cross-project log at `~/.claude/autopilot-eval.md`.
 - **`/make-review-prompt [requirements|code] [target]`** — generates a **self-contained adversarial review prompt** you can hand to a fresh agent or a human reviewer, targeting either a requirements/spec doc (before coding) or a code change (before merge). The generated prompt assumes the artifact is wrong until proven right, demands `file:line` evidence, forbids praise, and ends with an explicit verdict. Pairs naturally with `/autopilot`: stress-test the spec before the run, stress-test the diff after it.
-- **`/autopilot-auto <task> [--session <id>] [--max-rounds N] [--timeout H]`** — combines `/autopilot` coding with an **automated adversarial review loop** powered by OpenAI Codex (CLI or Cursor plugin). You open two sessions — Claude Code for coding, Codex for reviewing — enter the same session ID on each side, and walk away. They communicate through a shared channel file (`.autopilot/reviews/<session-id>/channel.md`), polling every 30 seconds. The loop terminates when Codex approves, max rounds (default 10) are reached, or timeout (default 5h) expires. See [How to use `/autopilot-auto`](#how-to-use-autopilot-auto) below.
+- **`/autopilot-auto <task> [--session <id>] [--max-rounds N] [--timeout H]`** — combines `/autopilot` coding with an **automated adversarial review loop** powered by OpenAI Codex (CLI or Cursor plugin). You open two sessions — Claude Code for coding, Codex for reviewing — enter the same session ID on each side, and walk away. They communicate through a shared channel file (`.autopilot/reviews/<session-id>/channel.md`), polling every minute. The loop terminates when Codex approves, max rounds (default 10) are reached, or timeout (default 5h) expires. See [How to use `/autopilot-auto`](#how-to-use-autopilot-auto) below.
 
 > These are opinionated and intentionally strict. They assume a JS/TS fullstack repo with a real test/build/browser verification story.
 
@@ -98,7 +98,7 @@ Either way, Codex will start monitoring the channel file and reviewing code chan
 
 ### 3. Walk away
 
-Both sides poll the channel file every 30 seconds. Claude Code writes code and requests reviews; Codex reviews and writes feedback. The loop continues automatically until one of:
+Both sides poll the channel file every minute. Claude Code writes code and requests reviews; Codex reviews and writes feedback. The loop continues automatically until one of:
 - Codex approves (no BLOCKER/MAJOR findings)
 - Max rounds reached (default 10)
 - Timeout expires (default 5 hours)

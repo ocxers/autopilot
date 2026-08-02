@@ -7,7 +7,7 @@
 - **`/autopilot <任务 或 spec 文件路径>`** —— 把一条严格的*完成条件*作为持续指令:梳理每一层(前端 / 后端 / API / 数据库 / 鉴权 / 测试 / 构建),禁止自行缩小范围,跑仓库真实的验证矩阵,在真实浏览器里核验,只有当每一条需求都被 `[LIVE]` 验证过、或被真实外部依赖 `[BLOCKED]` 时才停止。专为你离开、无法回答追问的场景设计。
 - **`/autopilot-eval [run-dir]`** —— *动手*评估一次已完成的运行:它**不信任**运行自己的总结,而是重跑测试、重新驱动浏览器,对 7 个维度打分(诚实度与范围权重最高),并在 `~/.claude/autopilot-eval.md` 这一份跨项目日志里追加一行。
 - **`/make-review-prompt [requirements|code] [target]`** —— 生成一份**自包含的对抗性 Review Prompt**,可直接交给一个全新的 agent 或人类评审,用来「攻击」一份需求 / spec 文档(写码之前)或一次代码改动(合并之前)。生成的 prompt 预设「被审对象有错,直到被证明无错」,要求 `file:line` 证据、禁止夸赞、并以明确的裁决收尾。与 `/autopilot` 天然配套:跑之前先攻击 spec,跑完之后再攻击 diff。
-- **`/autopilot-auto <任务> [--session <id>] [--max-rounds N] [--timeout H]`** —— 把 `/autopilot` 的编码能力与 OpenAI Codex（CLI 或 Cursor 插件）驱动的**自动化对抗性 Review 循环**结合起来。你打开两个会话——Claude Code 负责写码，Codex 负责审查——在两边输入相同的 session ID，然后就可以离开。Claude Code 与 Codex 通过一份共享的 channel 文件（`.autopilot/reviews/<session-id>/channel.md`）通信，每 30 秒轮询一次状态变化。循环会在 Codex 通过、达到最大轮数（默认 10）、或超时（默认 5 小时）时终止。详见下方 [如何使用 `/autopilot-auto`](#如何使用-autopilot-auto)。
+- **`/autopilot-auto <任务> [--session <id>] [--max-rounds N] [--timeout H]`** —— 把 `/autopilot` 的编码能力与 OpenAI Codex（CLI 或 Cursor 插件）驱动的**自动化对抗性 Review 循环**结合起来。你打开两个会话——Claude Code 负责写码，Codex 负责审查——在两边输入相同的 session ID，然后就可以离开。Claude Code 与 Codex 通过一份共享的 channel 文件（`.autopilot/reviews/<session-id>/channel.md`）通信，每分钟轮询一次状态变化。循环会在 Codex 通过、达到最大轮数（默认 10）、或超时（默认 5 小时）时终止。详见下方 [如何使用 `/autopilot-auto`](#如何使用-autopilot-auto)。
 
 > 这些命令的风格强硬、刻意严格。它们假设你的仓库是 JS/TS 全栈项目,且具备真实的 测试 / 构建 / 浏览器 验证能力。
 
@@ -98,7 +98,7 @@ codex
 
 ### 3. 走开就好
 
-双方每 30 秒轮询一次 channel 文件。Claude Code 写代码并请求审查；Codex 审查代码并写反馈。循环自动持续，直到：
+双方每分钟轮询一次 channel 文件。Claude Code 写代码并请求审查；Codex 审查代码并写反馈。循环自动持续，直到：
 - Codex 通过（无 BLOCKER/MAJOR 发现）
 - 达到最大轮数（默认 10）
 - 超时（默认 5 小时）
