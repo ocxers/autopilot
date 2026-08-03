@@ -55,7 +55,7 @@ $ARGUMENTS
    ```
 
    Detect `ticket` by scanning the task description for a ticket-shaped token (e.g. `[A-Z]+-\d+`); leave it empty if none is found. **YAML safety:** ensure all string values (`task`, `ticket`, `session_id`) are properly quoted or use YAML block scalars if they contain characters that would break bare YAML strings (colons, quotes, newlines, `#`, `{`, `[`, etc.).
-8. **Print the Codex prompt template** (the exact template in Step 5, below) inside a fenced code block, with `<session-id>` and `<project-path>` substituted for their real values (`<project-path>` = the absolute repository root). After the block, tell the user: "Copy the prompt above into your Codex interactive session. When ready, the review loop will begin automatically after coding completes." Do this even on resume, in case the user needs to re-paste it into a fresh Codex session.
+8. **Print the Codex prompt template — DO NOT SKIP THIS STEP.** Print the exact template from Step 5 inside a fenced code block, with `<session-id>` and `<project-path>` substituted for their real values (`<project-path>` = the absolute repository root). After the block, tell the user: "Copy the prompt above into your Codex interactive session. When ready, the review loop will begin automatically after coding completes." Do this even on resume, in case the user needs to re-paste it into a fresh Codex session. Without this template, the user cannot start Codex, and the entire review loop is dead. **Do NOT proceed to Step 2 until this template has been printed.**
 
 ## Step 2 — Coding phase (adopt the `/autopilot` protocol inline)
 
