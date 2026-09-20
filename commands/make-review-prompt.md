@@ -67,11 +67,22 @@ skimming. Name real files, functions, and decisions — no placeholders.
 Keep these invariants in every generated prompt:
 - Opens by framing the reviewer as adversarial ("break it, assume wrong until proven right").
 - "Rules of engagement": read the real source before asserting; cite `file:line`; re-verify the
-  artifact's own references rather than trusting them; no praise/summary of what's good; mark
-  UNVERIFIED when it can't be checked; do not edit anything.
+  artifact's own references rather than trusting them; no praise and no per-item "verified OK"
+  list; mark UNVERIFIED when it can't be checked; do not edit anything.
 - Ends with a fixed output format: findings grouped **BLOCKER / MAJOR / MINOR / QUESTION**, each with
   a one-line title, `file:line` evidence, why it breaks or is unproven, and a concrete fix; then an
   explicit **verdict**.
+- **One code block for the whole review.** The generated prompt must tell the reviewer to emit its
+  ENTIRE report inside a single fenced code block (4 backticks, so nested ``` survive). The feedback
+  is a copy-target just like this prompt is — the user pastes the whole thing back into another
+  agent in one click, and rendered markdown (clickable links, collapsed structure, per-section
+  copying) loses fidelity. Inside the block, plain `path:line` beats markdown links: the destination
+  is an agent, not an IDE.
+- **Terse output.** The reviewer investigates deeply but writes briefly: each finding a few lines
+  carrying only the minimum evidence, empty severity groups omitted, and everything that checked out
+  compressed into a single closing sentence — that sentence is coverage information, not
+  praise, and is required, not optional. Depth of investigation is never traded for brevity of report — but a
+  review that found nothing serious should be short.
 
 ### Template A — Requirements / spec review
 
@@ -88,9 +99,20 @@ Keep these invariants in every generated prompt:
     # Rules of engagement
     - READ the actual source/design before asserting anything. Every claim MUST cite file:line.
     - Do NOT trust the spec's own file/line references — re-verify them against the code.
-    - No praise, no "what's good" summary. Only defects, gaps, wrong assumptions, risks.
+    - No praise and no per-item "verified OK" list. Only defects, gaps, wrong assumptions, risks.
+      The single coverage sentence required below is not praise — it states what was examined, not
+      what was good.
+      The single coverage sentence required below is not praise — it states what was examined, not
+      what was good.
     - If something can't be verified from available material, say so and mark it UNVERIFIED.
     - Do not edit any file. Review only.
+    - Review THOROUGHLY, report TERSELY. Investigate as deeply as you need; write it up in a few
+      lines per finding. No essays, no walkthrough of your process.
+    - Quote the MINIMUM evidence that proves the point: file:line, plus at most ~3 lines of code
+      and only when the reference alone doesn't show the problem. Never paste whole functions,
+      files, or diffs.
+    - Anything you checked and found sound gets ONE sentence for the entire review — not a
+      per-item "verified OK" list with evidence and code.
 
     # Attack vectors — work through EACH
     1. Hidden/unstated assumptions — list them and test each against codebase reality.
@@ -109,11 +131,20 @@ Keep these invariants in every generated prompt:
        AGAINST it. Which decision is most likely wrong?
     [+ artifact-specific vectors naming the real riskiest claims]
 
-    # Output format
-    Findings grouped BLOCKER / MAJOR / MINOR / QUESTION. Each: one-line title, file:line evidence,
-    why it breaks or is unproven, concrete fix or spec change. End with an explicit verdict:
-    "Implementable as written" OR "Needs these changes before coding: …". If a locked decision is
-    unsound, say which and why.
+    # Output format — keep it SHORT, and put it in ONE code block
+    Emit the ENTIRE review inside ONE fenced code block (4 backticks: ````) so it can be copied in
+    a single click — nothing outside it. Use plain path:line, not markdown links.
+    Findings grouped BLOCKER / MAJOR / MINOR / QUESTION, worst first. Each finding is at most ~4
+    lines: one-line title; file:line (quote ≤3 lines of source, only if the reference alone
+    doesn't show it); why it breaks or is unproven, in one sentence; the concrete fix or spec
+    change, in one sentence.
+    Omit empty severity groups entirely — no "none found" sections.
+    Everything you checked and found sound: ONE closing sentence naming the areas, e.g. "Checked
+    the acceptance criteria, the permission model and the mobile layout — no issues." No per-item
+    evidence for what passes.
+    End with an explicit verdict: "Implementable as written" OR "Needs these changes before
+    coding: <one line per item>". If a locked decision is unsound, say which and why in one line.
+    No preamble, no restating the spec, no description of how you reviewed.
 
 ### Template B — Code change review
 
@@ -130,9 +161,18 @@ Keep these invariants in every generated prompt:
     - READ the actual diff AND the surrounding code it touches. Every claim MUST cite file:line.
     - Do NOT trust the PR description or comments — verify behavior against the code.
     - Trace at least one concrete failing input/state → wrong output for each correctness finding.
-    - No praise, no summary of what's good. Only defects, risks, gaps.
+    - No praise and no per-item "verified OK" list. Only defects, risks, gaps. The single
+      coverage sentence required below is not praise — it states what was examined, not what was
+      good.
     - If a concern can't be confirmed, mark it UNVERIFIED rather than asserting it.
     - Do not edit any file. Review only.
+    - Review THOROUGHLY, report TERSELY. Investigate as deeply as you need; write it up in a few
+      lines per finding. No essays, no walkthrough of your process.
+    - Quote the MINIMUM evidence that proves the point: file:line, plus at most ~3 lines of code
+      and only when the reference alone doesn't show the problem. Never paste whole functions,
+      files, or diffs.
+    - Anything you checked and found sound gets ONE sentence for the entire review — not a
+      per-item "verified OK" list with evidence and code.
 
     # Attack vectors — work through EACH
     1. Correctness & edge cases — null/undefined, empty, boundary, off-by-one, unexpected types;
@@ -152,17 +192,28 @@ Keep these invariants in every generated prompt:
     9. Test coverage — what's untested that should be; is any test weakened/skipped to pass?
     [+ artifact-specific vectors naming the real riskiest functions/decisions]
 
-    # Output format
-    Findings grouped BLOCKER / MAJOR / MINOR / QUESTION. Each: one-line title, file:line evidence, a
-    concrete failure scenario (input/state → wrong result), and a concrete fix. End with an explicit
-    verdict: "Safe to merge" OR "Fix these before merge: …".
+    # Output format — keep it SHORT, and put it in ONE code block
+    Emit the ENTIRE review inside ONE fenced code block (4 backticks: ````) so it can be copied in
+    a single click — nothing outside it. Use plain path:line, not markdown links.
+    Findings grouped BLOCKER / MAJOR / MINOR / QUESTION, worst first. Each finding is at most ~4
+    lines: one-line title; file:line (quote ≤3 lines of source, only if the reference alone
+    doesn't show the problem); the failure as one concrete sentence (input/state → wrong result);
+    the fix in one sentence.
+    Omit empty severity groups entirely — no "none found" sections.
+    Everything you checked and found sound: ONE closing sentence naming the areas, e.g. "Checked
+    the auth guard, the migration and the websocket reconnect path — no issues." No per-item
+    evidence, no pasted code for what passes.
+    End with an explicit verdict: "Safe to merge" OR "Fix these before merge: <one line per item>".
+    No preamble, no restating the change, no description of how you reviewed.
 
 ---
 
 ## Step 3 — Output
 
-Emit the finished prompt as **one fenced code block** so the user can copy it in a single click. Do
-not nest triple backticks inside it — use indentation for any inline examples. Outside the block,
+Emit the finished prompt as **one code block fenced with 4 backticks** (````) so the user can copy
+it in a single click. Four, not three: the templates themselves mention backtick fences, and a
+3-backtick fence would be terminated early by that text. Do not nest a 4-backtick fence inside —
+use indentation for any inline examples. Outside the block,
 add at most 2–3 short lines (in the language the user is conversing in) noting: the detected
 **mode** and **target**, and where you deliberately sharpened the prompt (the artifact-specific
 vectors you added). Then offer to dispatch a reviewer agent with this prompt if the user wants.
