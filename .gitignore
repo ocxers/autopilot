@@ -3,3 +3,7 @@
 .screenshots/
 .playwright-mcp/
 launch-post.md
+
+# demo-video: the Kokoro engine is installed here by setup.sh
+skills/demo-video/tts/node_modules/
+__pycache__/

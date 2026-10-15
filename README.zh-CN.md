@@ -2,12 +2,13 @@
 
 [English](README.md) | **中文**
 
-一组 Claude Code 斜杠命令,用于**无人值守**地推进 JS/TS 全栈任务,直至真正 100% 完成,然后由另一条命令独立打分。
+一组 Claude Code 斜杠命令,用于**无人值守**地推进 JS/TS 全栈任务,直至真正 100% 完成,然后由另一条命令独立打分。另附 `/demo-video`,把做好的功能录成演示视频。
 
 - **`/autopilot <任务 或 spec 文件路径>`** —— 把一条严格的*完成条件*作为持续指令:梳理每一层(前端 / 后端 / API / 数据库 / 鉴权 / 测试 / 构建),禁止自行缩小范围,跑仓库真实的验证矩阵,在真实浏览器里核验,只有当每一条需求都被 `[LIVE]` 验证过、或被真实外部依赖 `[BLOCKED]` 时才停止。专为你离开、无法回答追问的场景设计。
 - **`/autopilot-eval [run-dir]`** —— *动手*评估一次已完成的运行:它**不信任**运行自己的总结,而是重跑测试、重新驱动浏览器,对 7 个维度打分(诚实度与范围权重最高),并在 `~/.claude/autopilot-eval.md` 这一份跨项目日志里追加一行。
 - **`/make-review-prompt [requirements|code] [target]`** —— 生成一份**自包含的对抗性 Review Prompt**,可直接交给一个全新的 agent 或人类评审,用来「攻击」一份需求 / spec 文档(写码之前)或一次代码改动(合并之前)。生成的 prompt 预设「被审对象有错,直到被证明无错」,要求 `file:line` 证据、禁止夸赞、并以明确的裁决收尾。与 `/autopilot` 天然配套:跑之前先攻击 spec,跑完之后再攻击 diff。
 - **`/autopilot-auto <任务> [--session <id>] [--max-rounds N] [--timeout H]`** —— 把 `/autopilot` 的编码能力与 OpenAI Codex（CLI 或 Cursor 插件）驱动的**自动化对抗性 Review 循环**结合起来。你打开两个会话——Claude Code 负责写码，Codex 负责审查——在两边输入相同的 session ID，然后就可以离开。Claude Code 与 Codex 通过一份共享的 channel 文件（`.autopilot/reviews/<session-id>/channel.md`）通信，每分钟轮询一次状态变化。循环会在 Codex 通过、达到最大轮数（默认 10）、或超时（默认 5 小时）时终止。详见下方 [如何使用 `/autopilot-auto`](#如何使用-autopilot-auto)。
+- **`/demo-video [mode=clip|walkthrough] [lang=en|zh] [voice=…] [music=…] …`** —— 用脚本化的 Playwright 给 Web 应用录制真实的演示视频:**clip**(15–30 秒,证明某个工单或 PR 的一个修复 / 功能;修 bug 时额外录一段修复前的对照)或 **walkthrough**(几分钟,分章节,长等待自动快进,带字幕,可选英文配音和背景音乐)。录制前先彩排,结尾必须停在应用真实的结果上,画面里不出现任何密钥;交付前必须由一个独立的评审 subagent 审过。详见下方 [如何使用 `/demo-video`](#如何使用-demo-video)。
 
 > 这些命令的风格强硬、刻意严格。它们假设你的仓库是 JS/TS 全栈项目,且具备真实的 测试 / 构建 / 浏览器 验证能力。
 
@@ -29,6 +30,7 @@
 /autopilot:autopilot-eval
 /autopilot:make-review-prompt
 /autopilot:autopilot-auto <任务> [--session <id>] [--max-rounds N] [--timeout H]
+/autopilot:demo-video [mode=clip|walkthrough] [lang=en|zh] …
 ```
 
 之后更新用下面两条命令(`/plugin install` 对已安装的插件不会拉新版本):
@@ -42,7 +44,7 @@
 
 ### 方式 B —— 安装脚本(保留裸 `/autopilot`)
 
-把命令软链到 `~/.claude/commands/`,从而保留不带命名空间的名字:
+把命令软链到 `~/.claude/commands/`、把 `demo-video` skill 软链到 `~/.claude/skills/`,从而保留不带命名空间的名字:
 
 ```
 git clone https://github.com/ocxers/autopilot.git
@@ -59,7 +61,10 @@ cd autopilot
 /autopilot-eval
 /make-review-prompt [requirements|code] [target]
 /autopilot-auto <任务> [--session <id>] [--max-rounds N] [--timeout H]
+/demo-video [mode=clip|walkthrough] [lang=en|zh] …
 ```
+
+如果 `~/.claude/skills/demo-video` 已经是一个真实目录(你自己的副本),脚本不会动它,只会提示;把它移走后重跑即可改用仓库版本。
 
 如果你还没有评分日志,脚本会在 `~/.claude/autopilot-eval.md` 处生成一份**空**日志;它绝不会覆盖已有日志。
 
@@ -105,6 +110,58 @@ codex
 
 结果保存在 `.autopilot/reviews/<session-id>/summary.md`。
 
+## 如何使用 `/demo-video`
+
+在要录制的应用的仓库里,用自然语言或参数调用:
+
+```
+/demo-video record PROJ-123: the typed start date is kept after Renew   lang=en
+/demo-video 录一个结账流程的 walkthrough   lang=en voice=female music=on
+/demo-video 录一个设置页的演示视频，中文，不要配音
+```
+
+### 本机首次使用
+
+```
+bash ~/.claude/skills/demo-video/scripts/setup.sh          # 安装脚本方式(方式 B)
+bash <插件目录>/skills/demo-video/scripts/setup.sh          # 插件方式:Claude 会替你运行
+```
+
+它会检查并安装缺少的依赖:ffmpeg、Python 3 + Pillow、Node 18+、Playwright 及其 Chrome、Kokoro 配音引擎和背景音乐。`--check` 只报告不安装;`--voice` 顺便现在就下载配音模型(约 330 MB,否则在第一次配音时下载)。支持 macOS 和 Linux。
+
+### 参数
+
+| 参数 | 取值 | clip 默认 | walkthrough 默认 |
+| --- | --- | --- | --- |
+| `mode` | `clip` / `walkthrough` | 根据请求推断 | 根据请求推断 |
+| `lang` | `en` / `zh`(界面、字幕、配音) | 询问 | 询问 |
+| `captions` | `on` / `off` | on | on |
+| `voice` | `off` / `female` / `male`(目前仅英文) | off | `en` 为 `female`,`zh` 为 `off` |
+| `music` | `off` / `on`,可选 `lufs=` | off | on,-42 LUFS,人声出现时自动压低 |
+| `camera` | `studio`(推近到点击、输入的位置) / `static` | studio | static |
+| `frame` | `wallpaper`(浏览器窗口放在壁纸上) / `none` | wallpaper | none |
+| `ff` | 长等待快进:`auto` / `off` | 手动 | auto(超过 3 秒的等待) |
+| `post` | `none` / `jira`(预览并经你确认后,把视频发到工单评论) | none | none |
+
+录制前最多问两个问题:缺 `lang` 时问语言;只有请求没说清时才问 `mode`。
+
+### 应用 profile
+
+如何启动应用、登录、等待长任务、彩排后如何复位,这些都因应用而异,所以放在 profile 里而不是 skill 里:先找 `<应用仓库>/.demo-video/PROFILE.md`,再找 `~/.config/demo-video/profiles/<app>/PROFILE.md`。没有的话,Claude 会在录制前先写一份。登录方式:无头录制用保存好的 Playwright 会话;SSO / 2FA 的应用则通过 CDP 录制你手动登录好的 Chrome 里的一个标签页 —— Claude 绝不会替你输入密码。
+
+### 产出
+
+视频写到被录应用的 `docs/videos/`(修 bug 为 `<KEY>-before-vN.mp4` / `<KEY>-fix-vN.mp4`,walkthrough 为 `<app>-<topic>-<lang>-vN.mp4`),且绝不提交到 git。中间文件在 `~/.cache/demo-video/`。
+
+### 第三方内容
+
+仓库不打包任何第三方素材,都在首次使用时下载:
+- **配音:** [Kokoro-82M](https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX),通过 `kokoro-js`(Apache-2.0),首次下载后本地离线运行。
+- **音乐:** 四首 [Mixkit](https://mixkit.co/license/#musicFree) 曲目(Mixkit Stock Music Free License)。
+- **壁纸:** 内置渐变(`aurora`、`violet`、`ocean` …)为原创,可用于公开视频。Recordly 的 macOS 壁纸只有在你同意后才会下载(`render_demo.py --fetch-recordly`);其授权不明确,仅限内部工单和 PR 使用。
+
+可选的 `post=jira` 从 `~/.config/demo-video/jira-sites.json` 读取 Jira 站点和凭据,格式见 `skills/demo-video/scripts/post_jira_video.py` 的文件说明。
+
 ## 它真的有用吗?
 
 下图:52 天内(2026-06-10 → 07-31)、跨 5 个项目(已匿名)的 140 次无人值守运行,每次都由独立的 `/autopilot-eval` *动手*评分——重跑测试、重新驱动浏览器,而非信任运行自己的总结。
@@ -142,6 +199,7 @@ codex
 - 评分日志(`~/.claude/autopilot-eval.md`)是**你本地私有的**,不会随本仓库发布。仓库只在 `templates/` 下提供一份空模板。
 - `/autopilot` 每次运行会在目标仓库的 `docs/autopilot-runs/<timestamp>/` 留下审计痕迹(清单、范围图、命令、浏览器证据、阻塞项、逐行核对)。
 - 除非你明确要求,这些命令绝不会执行 `git add/commit/push`,也不会开 PR。
+- 上面的评分数据只针对 `/autopilot`;`/demo-video` 不在其中。
 
 ## 许可证
 

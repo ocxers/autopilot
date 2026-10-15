@@ -7,7 +7,7 @@
     {
       "name": "autopilot",
       "source": "./",
-      "description": "Unattended, completion-driven autopilot for JS/TS fullstack tasks, an independent hands-on run grader, and an adversarial review-prompt generator."
+      "description": "Unattended, completion-driven autopilot for JS/TS fullstack tasks, an independent hands-on run grader, an adversarial review-prompt generator, and a demo-video recorder for web apps."
     }
   ]
 }

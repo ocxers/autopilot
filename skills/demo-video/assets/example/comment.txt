@@ -1,0 +1,6 @@
+h3. Recording: typed date is kept — 2026-10-08
+Pick 01/10/2026–30/11/2026 in the calendar, type the start year as 2025, click Renew. Before the fix the start date reset to 2026; now it stays 01/10/2025 and the renewal saves. Recorded on the dev test customer.
+*Before*
+{before}
+*After*
+{video}

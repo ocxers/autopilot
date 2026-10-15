@@ -2,12 +2,13 @@
 
 **English** | [中文](README.zh-CN.md)
 
-Claude Code slash commands for running JS/TS fullstack work **unattended**, driven to genuine 100% completion — then graded independently.
+Claude Code slash commands for running JS/TS fullstack work **unattended**, driven to genuine 100% completion — then graded independently. Plus `/demo-video`, which records the finished work as a demo video.
 
 - **`/autopilot <task or spec-path>`** — adopts a strict *completion condition* as a standing directive: maps every layer (FE/BE/API/DB/auth/tests/build), forbids self-authored scope-narrowing, runs the repo's real verification matrix, verifies in a real browser, and only stops when every requirement line is `[LIVE]`-verified or `[BLOCKED]` by a real external dependency. Built for when you're away and can't answer follow-ups.
 - **`/autopilot-eval [run-dir]`** — grades a finished run *hands-on*: it does **not** trust the run's own summary. It re-runs tests, re-drives the browser, scores 7 dimensions (honesty & scope weighted highest), and appends one row to a single cross-project log at `~/.claude/autopilot-eval.md`.
 - **`/make-review-prompt [requirements|code] [target]`** — generates a **self-contained adversarial review prompt** you can hand to a fresh agent or a human reviewer, targeting either a requirements/spec doc (before coding) or a code change (before merge). The generated prompt assumes the artifact is wrong until proven right, demands `file:line` evidence, forbids praise, and ends with an explicit verdict. Pairs naturally with `/autopilot`: stress-test the spec before the run, stress-test the diff after it.
 - **`/autopilot-auto <task> [--session <id>] [--max-rounds N] [--timeout H]`** — combines `/autopilot` coding with an **automated adversarial review loop** powered by OpenAI Codex (CLI or Cursor plugin). You open two sessions — Claude Code for coding, Codex for reviewing — enter the same session ID on each side, and walk away. They communicate through a shared channel file (`.autopilot/reviews/<session-id>/channel.md`), polling every minute. The loop terminates when Codex approves, max rounds (default 10) are reached, or timeout (default 5h) expires. See [How to use `/autopilot-auto`](#how-to-use-autopilot-auto) below.
+- **`/demo-video [mode=clip|walkthrough] [lang=en|zh] [voice=…] [music=…] …`** — records a real demo video of a web app with scripted Playwright: a **clip** (15–30 s proof of one fix or feature for a ticket or PR, with a before cut for bug fixes) or a **walkthrough** (minutes long, chapters, fast-forwarded waits, captions, optional English voice-over and music). It rehearses before recording, ends on the app's real result, keeps secrets out of frame, and an independent reviewer subagent must pass the cut before delivery. See [How to use `/demo-video`](#how-to-use-demo-video) below.
 
 > These are opinionated and intentionally strict. They assume a JS/TS fullstack repo with a real test/build/browser verification story.
 
@@ -29,6 +30,7 @@ Then invoke namespaced:
 /autopilot:autopilot-eval
 /autopilot:make-review-prompt
 /autopilot:autopilot-auto <task> [--session <id>] [--max-rounds N] [--timeout H]
+/autopilot:demo-video [mode=clip|walkthrough] [lang=en|zh] …
 ```
 
 To update later (`/plugin install` won't refresh an already-installed plugin):
@@ -42,7 +44,7 @@ Or skip manual updates entirely: run `/plugin`, open the **Marketplaces** tab, a
 
 ### Option B — install script (keeps the bare `/autopilot`)
 
-Symlinks the commands into `~/.claude/commands/` so you keep the un-namespaced names:
+Symlinks the commands into `~/.claude/commands/` and the `demo-video` skill into `~/.claude/skills/`, so you keep the un-namespaced names:
 
 ```
 git clone https://github.com/ocxers/autopilot.git
@@ -59,7 +61,10 @@ Then invoke:
 /autopilot-eval
 /make-review-prompt [requirements|code] [target]
 /autopilot-auto <task> [--session <id>] [--max-rounds N] [--timeout H]
+/demo-video [mode=clip|walkthrough] [lang=en|zh] …
 ```
+
+If `~/.claude/skills/demo-video` already exists as a real directory (your own copy), the script leaves it alone and says so; move it away and re-run to use the repo version.
 
 The script also seeds an **empty** eval log at `~/.claude/autopilot-eval.md` if you don't already have one. It never overwrites an existing log.
 
@@ -105,6 +110,58 @@ Both sides poll the channel file every minute. Claude Code writes code and reque
 
 Results are saved to `.autopilot/reviews/<session-id>/summary.md`.
 
+## How to use `/demo-video`
+
+Ask in plain words or with parameters, from the repo of the app you want to record:
+
+```
+/demo-video record PROJ-123: the typed start date is kept after Renew   lang=en
+/demo-video walkthrough of the checkout flow   lang=en voice=female music=on
+/demo-video 录一个设置页的演示视频，中文，不要配音
+```
+
+### First run on a machine
+
+```
+bash ~/.claude/skills/demo-video/scripts/setup.sh          # install script (Option B)
+bash <plugin dir>/skills/demo-video/scripts/setup.sh       # plugin install: Claude runs it for you
+```
+
+It checks and installs what is missing: ffmpeg, Python 3 + Pillow, Node 18+, Playwright and its Chrome, the Kokoro voice engine and the music bed. `--check` only reports; `--voice` also downloads the voice model now (~330 MB, otherwise on the first voiced video). Runs on macOS and Linux.
+
+### Parameters
+
+| Parameter | Values | clip default | walkthrough default |
+| --- | --- | --- | --- |
+| `mode` | `clip` / `walkthrough` | inferred from the request | inferred from the request |
+| `lang` | `en` / `zh` (UI, captions, voice) | asked | asked |
+| `captions` | `on` / `off` | on | on |
+| `voice` | `off` / `female` / `male` (English only for now) | off | `female` for `en`, `off` for `zh` |
+| `music` | `off` / `on`, optional `lufs=` | off | on, -42 LUFS, ducked under the voice |
+| `camera` | `studio` (push-ins on what is clicked or typed) / `static` | studio | static |
+| `frame` | `wallpaper` (browser window on a wallpaper) / `none` | wallpaper | none |
+| `ff` | fast-forward long waits: `auto` / `off` | by hand | auto (waits over 3 s) |
+| `post` | `none` / `jira` (post the cuts to the ticket, after a preview and your yes) | none | none |
+
+It asks at most two questions before recording: `lang` when missing, and `mode` only when the request leaves it open.
+
+### App profiles
+
+How to start the app, sign in, wait for long work and reset after a rehearsal is app-specific, so it lives in a profile, not in the skill: `<app repo>/.demo-video/PROFILE.md`, else `~/.config/demo-video/profiles/<app>/PROFILE.md`. If there is none, Claude writes one before recording. Signing in uses a saved Playwright session for headless recording, or a tab in a Chrome you signed in to by hand (SSO, 2FA) over CDP — Claude never types your passwords.
+
+### Output
+
+Cuts go to the recorded app's `docs/videos/` (`<KEY>-before-vN.mp4` / `<KEY>-fix-vN.mp4` for a fix, `<app>-<topic>-<lang>-vN.mp4` for a walkthrough) and are never committed. Work files live in `~/.cache/demo-video/`.
+
+### Third-party content
+
+Nothing third-party is bundled; it is downloaded on first use:
+- **Voice:** [Kokoro-82M](https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX) via `kokoro-js` (Apache-2.0), local and offline after the first download.
+- **Music:** four [Mixkit](https://mixkit.co/license/#musicFree) tracks (Mixkit Stock Music Free License).
+- **Wallpapers:** the built-in gradients (`aurora`, `violet`, `ocean`, …) are original and safe for public videos. Recordly's macOS wallpapers are fetched only after you agree (`render_demo.py --fetch-recordly`); their licence is unclear, so keep them to internal tickets and PRs.
+
+Optional `post=jira` reads Jira sites and credentials from `~/.config/demo-video/jira-sites.json`; see the docstring of `skills/demo-video/scripts/post_jira_video.py`.
+
 ## Does it actually work?
 
 Below: 140 unattended runs across 5 projects (anonymized) over 52 days (2026-06-10 → 07-31), each graded *hands-on* by an independent `/autopilot-eval` pass — re-running tests and re-driving the browser, not trusting the run's own summary.
@@ -142,6 +199,7 @@ Each `/autopilot-eval` run appends one row to `~/.claude/autopilot-eval.md`. The
 - The eval log (`~/.claude/autopilot-eval.md`) is **yours and local** — it is not published with this repo. The repo ships only an empty template under `templates/`.
 - `/autopilot` runs leave an audit trail under `docs/autopilot-runs/<timestamp>/` in the target repo (checklist, surface map, commands, browser evidence, blockers, per-line accounting).
 - These commands never `git add/commit/push` or open PRs unless you explicitly ask.
+- The `/autopilot` eval numbers above are about `/autopilot` only; `/demo-video` is not part of them.
 
 ## License
 
