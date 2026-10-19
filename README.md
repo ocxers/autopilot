@@ -2,13 +2,14 @@
 
 **English** | [中文](README.zh-CN.md)
 
-Claude Code slash commands for running JS/TS fullstack work **unattended**, driven to genuine 100% completion — then graded independently. Plus `/demo-video`, which records the finished work as a demo video.
+Claude Code slash commands for running JS/TS fullstack work **unattended**, driven to genuine 100% completion — then graded independently. Plus `/demo-video`, which records the finished work as a demo video, and `/flow-check`, which walks the app as a real user and reports where the flow can be shorter.
 
 - **`/autopilot <task or spec-path>`** — adopts a strict *completion condition* as a standing directive: maps every layer (FE/BE/API/DB/auth/tests/build), forbids self-authored scope-narrowing, runs the repo's real verification matrix, verifies in a real browser, and only stops when every requirement line is `[LIVE]`-verified or `[BLOCKED]` by a real external dependency. Built for when you're away and can't answer follow-ups.
 - **`/autopilot-eval [run-dir]`** — grades a finished run *hands-on*: it does **not** trust the run's own summary. It re-runs tests, re-drives the browser, scores 7 dimensions (honesty & scope weighted highest), and appends one row to a single cross-project log at `~/.claude/autopilot-eval.md`.
 - **`/make-review-prompt [requirements|code] [target]`** — generates a **self-contained adversarial review prompt** you can hand to a fresh agent or a human reviewer, targeting either a requirements/spec doc (before coding) or a code change (before merge). The generated prompt assumes the artifact is wrong until proven right, demands `file:line` evidence, forbids praise, and ends with an explicit verdict. Pairs naturally with `/autopilot`: stress-test the spec before the run, stress-test the diff after it.
 - **`/autopilot-auto <task> [--session <id>] [--max-rounds N] [--timeout H]`** — combines `/autopilot` coding with an **automated adversarial review loop** powered by OpenAI Codex (CLI or Cursor plugin). You open two sessions — Claude Code for coding, Codex for reviewing — enter the same session ID on each side, and walk away. They communicate through a shared channel file (`.autopilot/reviews/<session-id>/channel.md`), polling every minute. The loop terminates when Codex approves, max rounds (default 10) are reached, or timeout (default 5h) expires. See [How to use `/autopilot-auto`](#how-to-use-autopilot-auto) below.
 - **`/demo-video [mode=clip|walkthrough] [lang=en|zh] [voice=…] [music=…] …`** — records a real demo video of a web app with scripted Playwright: a **clip** (15–30 s proof of one fix or feature for a ticket or PR, with a before cut for bug fixes) or a **walkthrough** (minutes long, chapters, fast-forwarded waits, captions, optional English voice-over and music). It rehearses before recording, ends on the app's real result, keeps secrets out of frame, and an independent reviewer subagent must pass the cut before delivery. See [How to use `/demo-video`](#how-to-use-demo-video) below.
+- **`/flow-check [feature | all] [flow|ux|recheck] [out=<dir>]`** — a flow-minimalist product review done in a real browser: it walks each user goal from the most likely starting point using only what is on screen, counts steps, pages, decisions and long waits, and asks of every step *can it be removed, merged, automated or deferred?* Each finding is ranked P0–P3 with a concrete fix and a browser-checkable "done when". The full report and screenshots go to a `flow-check-<date>-<topic>/` folder in the checked repo; the chat gets a short summary. It never changes code. See [How to use `/flow-check`](#how-to-use-flow-check) below.
 
 > These are opinionated and intentionally strict. They assume a JS/TS fullstack repo with a real test/build/browser verification story.
 
@@ -31,6 +32,7 @@ Then invoke namespaced:
 /autopilot:make-review-prompt
 /autopilot:autopilot-auto <task> [--session <id>] [--max-rounds N] [--timeout H]
 /autopilot:demo-video [mode=clip|walkthrough] [lang=en|zh] …
+/autopilot:flow-check [feature | all] [flow|ux|recheck] [out=<dir>]
 ```
 
 To update later (`/plugin install` won't refresh an already-installed plugin):
@@ -44,7 +46,7 @@ Or skip manual updates entirely: run `/plugin`, open the **Marketplaces** tab, a
 
 ### Option B — install script (keeps the bare `/autopilot`)
 
-Symlinks the commands into `~/.claude/commands/` and the `demo-video` skill into `~/.claude/skills/`, so you keep the un-namespaced names:
+Symlinks the commands into `~/.claude/commands/` and the `demo-video` and `flow-check` skills into `~/.claude/skills/`, so you keep the un-namespaced names:
 
 ```
 git clone https://github.com/ocxers/autopilot.git
@@ -62,9 +64,10 @@ Then invoke:
 /make-review-prompt [requirements|code] [target]
 /autopilot-auto <task> [--session <id>] [--max-rounds N] [--timeout H]
 /demo-video [mode=clip|walkthrough] [lang=en|zh] …
+/flow-check [feature | all] [flow|ux|recheck] [out=<dir>]
 ```
 
-If `~/.claude/skills/demo-video` already exists as a real directory (your own copy), the script leaves it alone and says so; move it away and re-run to use the repo version.
+If `~/.claude/skills/demo-video` or `~/.claude/skills/flow-check` already exists as a real directory (your own copy), the script leaves it alone and says so; move it away and re-run to use the repo version.
 
 The script also seeds an **empty** eval log at `~/.claude/autopilot-eval.md` if you don't already have one. It never overwrites an existing log.
 
@@ -162,6 +165,23 @@ Nothing third-party is bundled; it is downloaded on first use:
 
 Optional `post=jira` reads Jira sites and credentials from `~/.config/demo-video/jira-sites.json`; see the docstring of `skills/demo-video/scripts/post_jira_video.py`.
 
+## How to use `/flow-check`
+
+Run it from the repo of the app, with the app runnable locally:
+
+```
+/flow-check create a ticket          # one feature, flow + UX (default)
+/flow-check checkout ux              # first-time-user walkthrough only
+/flow-check all                      # every user journey, first-run journeys first
+/flow-check create a ticket recheck  # after fixes: re-walk and compare with the last report
+```
+
+- **Modes:** `flow` looks at structure only (steps, pages, decisions, what can go); `ux` walks as a first-time user and asks at every step *what do I want, where do I click, does the label tell me, do I know it worked?*; `recheck` re-walks the same goals under the same conditions (viewport, account state, UI language), against an earlier report it names (you pick when it is unclear), and marks every earlier finding resolved / partly / not resolved. No mode means `flow` + `ux`.
+- **Like a real user:** it acts only on what the page shows. It does not read code to find an entry point or pull tokens from logs; a missing entry point, or a step that needs a terminal, is reported as a finding.
+- **Safe to run:** local or test environment and test data only. A control with real-world effects (payment, email to a real person, merge to a shared repo, a paid job) is not clicked: it stops on the confirmation screen, or before the control when there is none, and the report says where. The browser stays in the background so it does not take focus while you work.
+- **Output:** a `flow-check-<YYYY-MM-DD>-<topic>/` folder with `report.md` and `screenshots/`, never committed and never overwritten. Where the folder goes: `out=<dir>` if given, else where the project's CLAUDE.md / AGENTS.md says reports go, else next to earlier flow-check reports, else the repo's existing place for similar reports; failing all that it asks you once. Findings are numbered `FC-01…` and each has a "done when" line, so the report works as a spec: `/autopilot <report folder>/report.md only P0 and P1`, then `/flow-check <topic> recheck`.
+- It only reports. Before any fixing starts it asks once, even if the request said "fix it if the findings hold".
+
 ## Does it actually work?
 
 Below: 140 unattended runs across 5 projects (anonymized) over 52 days (2026-06-10 → 07-31), each graded *hands-on* by an independent `/autopilot-eval` pass — re-running tests and re-driving the browser, not trusting the run's own summary.
@@ -199,7 +219,7 @@ Each `/autopilot-eval` run appends one row to `~/.claude/autopilot-eval.md`. The
 - The eval log (`~/.claude/autopilot-eval.md`) is **yours and local** — it is not published with this repo. The repo ships only an empty template under `templates/`.
 - `/autopilot` runs leave an audit trail under `docs/autopilot-runs/<timestamp>/` in the target repo (checklist, surface map, commands, browser evidence, blockers, per-line accounting).
 - These commands never `git add/commit/push` or open PRs unless you explicitly ask.
-- The `/autopilot` eval numbers above are about `/autopilot` only; `/demo-video` is not part of them.
+- The `/autopilot` eval numbers above are about `/autopilot` only; `/demo-video` and `/flow-check` are not part of them.
 
 ## License
 

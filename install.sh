@@ -2,7 +2,7 @@
 #
 # install.sh — symlink the autopilot commands into ~/.claude/commands/ and the skills into
 # ~/.claude/skills/, so you can call the bare `/autopilot`, `/autopilot-eval`, `/autopilot-auto`,
-# `/make-review-prompt` and `/demo-video` (no plugin namespace).
+# `/make-review-prompt`, `/demo-video` and `/flow-check` (no plugin namespace).
 #
 # Idempotent: safe to re-run. Pass --copy to copy instead of symlink,
 # or --uninstall to remove the links.
@@ -63,6 +63,7 @@ link_one "$REPO_DIR/commands/autopilot-eval.md" "$CMD_DIR/autopilot-eval.md"
 link_one "$REPO_DIR/commands/autopilot-auto.md" "$CMD_DIR/autopilot-auto.md"
 link_one "$REPO_DIR/commands/make-review-prompt.md"  "$CMD_DIR/make-review-prompt.md"
 link_skill "$REPO_DIR/skills/demo-video"          "$SKILL_DIR/demo-video"
+link_skill "$REPO_DIR/skills/flow-check"          "$SKILL_DIR/flow-check"
 
 # Seed the cross-project eval log from the template ONLY if it doesn't exist —
 # never overwrite an existing log (it holds your private run history).
