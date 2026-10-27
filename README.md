@@ -154,7 +154,7 @@ How to start the app, sign in, wait for long work and reset after a rehearsal is
 
 ### Output
 
-Cuts go to the recorded app's `docs/videos/` (`<KEY>-before-vN.mp4` / `<KEY>-fix-vN.mp4` for a fix, `<app>-<topic>-<lang>-vN.mp4` for a walkthrough) and are never committed. Work files live in `~/.cache/demo-video/`.
+Cuts go to the recorded app's `docs/videos/` (`<KEY>-before-vN.mp4` / `<KEY>-fix-vN.mp4` for a fix, `<app>-<topic>-<lang>-vN.mp4` for a walkthrough) and are never committed. Work files live in `~/.cache/demo-video/`: each take leaves about 1.5 GB of frames, so takes no cut uses are deleted at delivery and takes older than 7 days before the next video. After a Jira post Claude offers to delete that ticket's files. `/demo-video clean` deletes all frames and temp files, `/demo-video clean all` also the videos in `docs/videos/`; both list what they would delete and wait for your yes. Downloads (Playwright, voice, music) are kept.
 
 ### Third-party content
 

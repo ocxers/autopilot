@@ -154,7 +154,7 @@ bash <插件目录>/skills/demo-video/scripts/setup.sh          # 插件方式:C
 
 ### 产出
 
-视频写到被录应用的 `docs/videos/`(修 bug 为 `<KEY>-before-vN.mp4` / `<KEY>-fix-vN.mp4`,walkthrough 为 `<app>-<topic>-<lang>-vN.mp4`),且绝不提交到 git。中间文件在 `~/.cache/demo-video/`。
+视频写到被录应用的 `docs/videos/`(修 bug 为 `<KEY>-before-vN.mp4` / `<KEY>-fix-vN.mp4`,walkthrough 为 `<app>-<topic>-<lang>-vN.mp4`),且绝不提交到 git。中间文件在 `~/.cache/demo-video/`:每录一遍约留下 1.5 GB 帧图,所以交付时删掉成片没用到的 take,录下一个视频前删掉超过 7 天的 take。发到 Jira 之后,Claude 会问要不要删掉这个 ticket 的文件。`/demo-video clean` 删掉所有帧图和临时文件,`/demo-video clean all` 连 `docs/videos/` 里的成片一起删;两者都先列出要删的内容,等你确认后才删。下载好的依赖(Playwright、配音、音乐)一直保留。
 
 ### 第三方内容
 

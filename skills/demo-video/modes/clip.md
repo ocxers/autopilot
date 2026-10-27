@@ -19,7 +19,7 @@ Hard rules for every clip:
 
 ## 0. Setup
 
-`bash $S/setup.sh` (first use, or when something fails to load). Work dir: `~/.cache/demo-video/work/<app>/<KEY>`; copy the scripts there and run everything from it:
+`bash $S/setup.sh` (first use, or when something fails to load). Delete old runs (SKILL.md rule 4). Work dir: `~/.cache/demo-video/work/<app>/<KEY>`; copy the scripts there and run everything from it:
 `cp $S/walkthrough/* $S/post/* $S/studio/* $S/render_demo.py <work dir>/`
 
 ## 1. Plan
@@ -92,7 +92,7 @@ Swatch sheet: `python3 $S/render_demo.py --backgrounds docs/videos/backgrounds.p
 2. Dispatch a fresh subagent (Agent tool, `general-purpose`) to review against `references/final-review.md`. Its prompt holds only: the absolute path of that file with "follow it exactly", the absolute paths of every cut, each cut's `timeline-<name>.json` and `camera.json`, the `url=` value, the ticket key, one sentence of what was wrong and the AC/repro it must prove, and a scratch directory for its frames. Never tell it what you fixed, why something looks the way it does, or what you expect.
 3. Fix every must-fix item, re-cut (rendering is cheap), and send the new cut to a new reviewer the same way. Repeat until no must-fix items remain. Should-fix items: fix them unless the fix would change what the user approved; say which you skipped.
 
-Clean up: stop servers you started, close tabs you opened, delete the reviewer's frame directory. Give the user the clickable path to each new version.
+Clean up: stop servers you started, close tabs you opened, delete the reviewer's frame directory and the unused runs (SKILL.md rule 4). Give the user the clickable path to each new version.
 
 ## 8. Post to Jira (only when asked)
 
@@ -104,6 +104,8 @@ Write `docs/videos/<KEY>/comment.txt` (wiki markup, English; a `{before}` line m
 python3 $S/post_jira_video.py <KEY> docs/videos/<KEY>-fix-vN.mp4 docs/videos/<KEY>/comment.txt \
   --before docs/videos/<KEY>-before-vN.mp4 --dry-run
 ```
+
+Once every embed is verified, offer the cleanup in the same turn: run `bash $S/clean.sh --key <KEY>` from the app's repo (it lists this ticket's work dir, videos and temp files with sizes, and deletes nothing), show the list, and ask with AskUserQuestion: "Yes, delete" or "No, keep them". Only on yes, run it again with `--yes` and report what it freed; any other answer deletes nothing. Other tickets' files are never touched here.
 
 ## Fallback: rendered from screenshots
 

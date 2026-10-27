@@ -8,6 +8,17 @@ description: Use when asked to record a demo video, a screen recording or a walk
 One skill with two modes, one recorder and one post-production. App-specific setup lives in app profiles.
 First use on a machine: `bash scripts/setup.sh` (checks and installs ffmpeg, Pillow, Playwright and its Chrome, the Kokoro voice, the music bed; `--check` only reports).
 
+```
+/demo-video clean        # delete the frames and temp files recording left behind
+/demo-video clean all    # the same, plus the delivered videos in the app's docs/videos
+```
+
+`/demo-video clean` (or `clear`): from the recorded app's repo, `bash scripts/clean.sh` deletes the work dirs and the temp files. `clean all` adds `--all`, which also deletes that repo's `docs/videos/`. Both keep the downloads (node, tts, music, recordly).
+1. Run it without `--yes`: it lists each path with its size and the total, and deletes nothing.
+2. Show that list and ask with AskUserQuestion: "Yes, delete" or "No, keep everything".
+3. Only on yes, run the same command with `--yes` and report what it freed. Any other answer: delete nothing and say so.
+If it refuses because a recording or render is running, say so; pass `--force` only when the user confirms nothing is recording.
+
 ## Parameters
 
 Read them as `key=value` after `/demo-video`, or from plain words ("英文，不要配音"). An unset parameter takes its mode's default.
@@ -54,6 +65,8 @@ The confirmations a mode needs before publishing (a Jira post's preview) or befo
    - Walkthrough names: `<app>-<topic>-<lang>-vN.mp4`, for example `shop-checkout-en-v1`.
    - Each cut keeps only its newest delivered version. A fix's before cut and fix cut are separate cuts, so both stay.
    - Renders made during review and never delivered are deleted at delivery.
+   - Each take leaves ~1.5 GB of JPG frames in `runs/`. At delivery, `bash scripts/clean.sh --unused <work dir>` deletes the runs no `runs-*.txt` lists; the listed runs stay, so a revision re-renders without re-recording.
+   - Before a new video, `bash scripts/clean.sh --old` deletes runs and temp files older than 7 days.
 5. **Blocking bugs.** A product bug that blocks the flow is fixed first (failing test, fix, push), then the flow is recorded. Report the other problems at delivery.
 6. **Progress.** One line after each step.
 
