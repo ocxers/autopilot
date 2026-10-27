@@ -16,7 +16,7 @@ You need all of that before starting, so read the profile first.
 
 ## Workflow
 
-1. **Work dir.** Run `bash scripts/setup.sh` on first use. Copy `scripts/walkthrough/*`, `scripts/post/*`, `scripts/studio/*`, `scripts/render_demo.py` and the profile's scripts into the profile's work dir (`~/.cache/demo-video/work/<app>`). Run everything from there.
+1. **Work dir.** Run `bash scripts/setup.sh` on first use. Delete old runs (SKILL.md rule 4). Copy `scripts/walkthrough/*`, `scripts/post/*`, `scripts/studio/*`, `scripts/render_demo.py` and the profile's scripts into the profile's work dir (`~/.cache/demo-video/work/<app>`). Run everything from there.
 2. **App up.** Start the recording copy of the app (profile).
 3. **Explore and rehearse.**
    - On a disposable copy (profile), walk the flow by hand until the real work finishes and its output is good. The profile's explore helper runs snippets against a signed-in browser.
@@ -35,7 +35,7 @@ You need all of that before starting, so read the profile first.
    - Run `bash post.sh <x> <out.mp4> lang= voice= music= captions= offset=`. No voice line may be reported "late"; if one is, shorten the caption before it.
 8. **Check and deliver.**
    - Make a contact sheet of the final mp4 (`ffmpeg -ss <t> -frames:v 1` at about 8 points): captions match the screen, the proof is at the end, nothing secret shows.
-   - Deliver the file (SKILL.md rule 4).
+   - Deliver the file and delete the unused runs (SKILL.md rule 4).
    - Report the path and length, the music offset (when music is on), the bugs you fixed (commits), and the issues still open.
 
 ## camera=studio and frame=wallpaper
