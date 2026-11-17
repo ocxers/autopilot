@@ -141,8 +141,8 @@ It checks and installs what is missing: ffmpeg, Python 3 + Pillow, Node 18+, Pla
 | `captions` | `on` / `off` | on | on |
 | `voice` | `off` / `female` / `male` (English only for now) | off | `female` for `en`, `off` for `zh` |
 | `music` | `off` / `on`, optional `lufs=` | off | on, -42 LUFS, ducked under the voice |
-| `camera` | `studio` (push-ins on what is clicked or typed) / `static` | studio | static |
-| `frame` | `wallpaper` (browser window on a wallpaper) / `none` | wallpaper | none |
+| `camera` | `static` (plain recording) / `studio` (push-ins on what is clicked or typed; only when asked) | static | static |
+| `frame` | `none` / `wallpaper` (browser window on a wallpaper; only when asked) | none | none |
 | `ff` | fast-forward long waits: `auto` / `off` | by hand | auto (waits over 3 s) |
 | `post` | `none` / `jira` (post the cuts to the ticket, after a preview and your yes) | none | none |
 

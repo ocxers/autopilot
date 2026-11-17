@@ -30,8 +30,8 @@ Read them as `key=value` after `/demo-video`, or from plain words ("英文，不
 | `captions` | `on` / `off` | on | on |
 | `voice` | `off` / `female` / `male`. English only for now. | off | `female` (Kokoro `af_heart`) for `en`; `off` for `zh` |
 | `music` | `off` / `on`, optional `lufs=` | off | on, -42 LUFS, ducked under the voice |
-| `camera` | `studio` (push-ins on what is clicked, typed or looked at) / `static` | studio | static |
-| `frame` | `wallpaper` (browser window on a wallpaper) / `none` (the page fills the video) | wallpaper (saved preference, else `ventura` when downloaded, else `aurora`) | none |
+| `camera` | `static` (plain recording, no camera movement) / `studio` (push-ins on what is clicked, typed or looked at; only when asked) | static | static |
+| `frame` | `none` (the page fills the video) / `wallpaper` (browser window on a wallpaper; only when asked) | none | none |
 | `ff` | fast-forward long waits: `auto` / `off` | Sped up by hand (`modes/clip.md` §4) | `auto` (waits over 3 s) |
 | `post` | `none` / `jira` | none | none |
 
@@ -72,7 +72,7 @@ The confirmations a mode needs before publishing (a Jira post's preview) or befo
 
 ## Default look
 
-- **clip:** studio camera, browser window on the wallpaper (saved preference), captions and a tip card. The background swatch sheet appears only when the user asks to choose one.
+- **clip:** plain screen recording (`camera=static frame=none`), captions and a tip card. The studio camera and the wallpaper frame only when the user asks for them by name.
 - **walkthrough:**
   - plain screen recording, with translucent captions (`CAP_ALPHA=150`, `CAP_STROKE=3`) and chapter pills
   - a "Fast-forward ×N" badge

@@ -1,6 +1,6 @@
 # Mode: clip (a short proof of one fix or feature)
 
-The rules in SKILL.md apply. A clip uses the same recorder (`scripts/walkthrough/lib.mjs`) and post-production (`post.sh`) as a walkthrough, with other defaults: `camera=studio frame=wallpaper voice=off music=off`, a tip card where it helps, and 15–30 s.
+The rules in SKILL.md apply. A clip uses the same recorder (`scripts/walkthrough/lib.mjs`) and post-production (`post.sh`) as a walkthrough, with other defaults: `camera=static frame=none voice=off music=off` (the plain recording), a tip card where it helps, and 15–30 s. Use the studio camera or the wallpaper frame only when the user asks for them by name.
 
 The job is fully delegated: plan, record, edit, check and deliver without asking the user to click, open apps, restore files or pick tools. Recording is always possible: headless with a saved session, or a tab in a Chrome the owner signed in to (§2).
 
@@ -11,7 +11,7 @@ Hard rules for every clip:
 - Record the page the way users reach it (with the app shell), e.g. `/settings?tab=ai-provider`, not a bare route without the sidebar and header.
 - Pace for a first-time viewer: actions at human speed, captions per SKILL.md rule 3, the proof still on screen ≥ 1.5 s before the end.
 - Nothing secret in the frame: `url=` (the address bar text) is the in-app route without tokens or auth codes; only test data on the page.
-- Background: the saved preference (memory), else `ventura` when the Recordly wallpapers are downloaded, else `aurora`. The swatch sheet (§6) only when the user asks to choose.
+- Background (only with `frame=wallpaper`): the saved preference (memory), else `ventura` when the Recordly wallpapers are downloaded, else `aurora`. The swatch sheet (§6) only when the user asks to choose.
 - A bug fix gets a **before** cut (§1b) as well as the fix cut; both are delivered. Before/after key screens (§4b) only when asked.
 - Nothing is delivered before the independent review (§7) has no must-fix items left.
 
@@ -56,11 +56,11 @@ Write `rec-<KEY>.mjs` from `assets/example/rec-clip.mjs`:
 
 ```bash
 bash post.sh <KEY> --check lang=en      # captions too fast or too short; fix in edits-<KEY>.json
-bash post.sh <KEY> <repo>/docs/videos/<KEY>-fix-vN.mp4 lang=en camera=studio frame=wallpaper \
-  background=<preference> url=<in-app URL> voice=off music=off
+bash post.sh <KEY> <repo>/docs/videos/<KEY>-fix-vN.mp4 lang=en camera=static frame=none \
+  url=<in-app URL> voice=off music=off
 ```
 
-- `camera=static` keeps the full page on the wallpaper; `frame=none` drops the wallpaper and window (the recording's own 3200×1800 pixels). `voice=female music=on` add the Kokoro voice-over and the music bed.
+- `camera=static frame=none` is the default: the recording's own 3200×1800 pixels, no camera movement. On request only: `camera=studio` adds push-ins, `frame=wallpaper` puts the browser window on a wallpaper. `voice=female music=on` add the Kokoro voice-over and the music bed.
 - The camera moves only where something is clicked, typed or looked at; scrolling and reading stay at full frame.
 - A long app wait is fast-forwarded by `R.waitFor` (badge "Fast-forward ×N"), or by `R.ffOn()` / `R.ffOff()` around it.
 - The renderer writes `camera.json` (camera keyframes) into `$TMPDIR/demo-video-post/<KEY>-session/` for the review.
@@ -76,9 +76,9 @@ Pick the 1–3 moments that show the difference (usually the proof; `timeline-<K
 
 `python3 $S/compare_key_screens.py docs/videos/<KEY>/compare.json` writes one PNG per pair, the two frames side by side under "Before the fix" / "After the fix". Both frames must show the same step; read every PNG before using it.
 
-## 5. Static framing
+## 5. Studio camera and wallpaper (only on request)
 
-`camera=static` (on the wallpaper) or `camera=static frame=none` (the plain recording). Nothing else changes.
+`camera=studio` (push-ins) and/or `frame=wallpaper` (browser window on a wallpaper). Nothing else changes.
 
 ## 6. Backgrounds
 

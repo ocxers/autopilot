@@ -141,8 +141,8 @@ bash <插件目录>/skills/demo-video/scripts/setup.sh          # 插件方式:C
 | `captions` | `on` / `off` | on | on |
 | `voice` | `off` / `female` / `male`(目前仅英文) | off | `en` 为 `female`,`zh` 为 `off` |
 | `music` | `off` / `on`,可选 `lufs=` | off | on,-42 LUFS,人声出现时自动压低 |
-| `camera` | `studio`(推近到点击、输入的位置) / `static` | studio | static |
-| `frame` | `wallpaper`(浏览器窗口放在壁纸上) / `none` | wallpaper | none |
+| `camera` | `static`(平录) / `studio`(推近到点击、输入的位置;仅在要求时) | static | static |
+| `frame` | `none` / `wallpaper`(浏览器窗口放在壁纸上;仅在要求时) | none | none |
 | `ff` | 长等待快进:`auto` / `off` | 手动 | auto(超过 3 秒的等待) |
 | `post` | `none` / `jira`(预览并经你确认后,把视频发到工单评论) | none | none |
 
